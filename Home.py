@@ -1,14 +1,15 @@
 """Smart home hub launcher. Run this (or its Home Screen icon) instead of panel.py.
 It downloads the newest hub files from your own GitHub repository first, so updates arrive by themselves.
-Your hub.json is never overwritten, so your rooms and buttons stay as you set them."""
+
+Privacy: the repository only holds the hub's code and layout. Anything personal goes in private.json,
+which lives only on this iPad. It is never downloaded, uploaded or overwritten."""
 import os
 import runpy
 from urllib.request import urlopen
 
 REPO = "SpeedyArt/smart-home-hub"   # your GitHub repository the hub is published to
 BRANCH = "main"
-FILES = ["panel.py", "panel.html"]  # always replaced with the newest version
-FIRST_TIME_ONLY = ["hub.json"]      # only downloaded if you don't have one yet
+FILES = ["Home.py", "panel.py", "panel.html", "hub.json"]  # always replaced with the newest version
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,8 +21,7 @@ def fetch(name):
 
 
 def update():
-    missing = [f for f in FIRST_TIME_ONLY if not os.path.exists(os.path.join(HERE, f))]
-    for name in FILES + missing:
+    for name in FILES:
         try:
             data = fetch(name)
         except Exception as e:  # offline: keep using the copy we already have

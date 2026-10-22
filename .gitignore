@@ -1,0 +1,5 @@
+private.json
+tv.json
+tv.py
+*.pyc
+__pycache__/

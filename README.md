@@ -1,13 +1,20 @@
 # Smart Home Hub (iPad, Pythonista)
 
+## Privacy and security
+- This repository only holds the hub's code and screen layout. It contains no passwords, keys,
+  addresses, locations or device details.
+- Anything personal goes in **`private.json`** on the iPad. It is never uploaded, downloaded or overwritten,
+  and it is listed in `.gitignore` so it can't be committed by accident.
+- Nobody can control your TV or other devices from this code. The buttons only ask the Apple Shortcuts app
+  on *your* iPad to act, and Apple Home only accepts commands from your own Apple Account.
+- Only you can change this repository. Keep two-factor authentication on for your GitHub account.
+
 Your own smart home hub. It runs in Pythonista on the iPad, with no PC needed.
 Everything you see comes from **hub.json**, so you can change it as much as you like.
 
 ## Setup (one time)
-1. In Pythonista, make a folder and put **`Home.py`** in it (plus your existing `hub.json` if you have one).
-   Run `Home.py` from now on: it downloads the newest `panel.py` and `panel.html` from this repository
-   every time it opens, so updates arrive by themselves. Your `hub.json` is never overwritten,
-   so your rooms, buttons and town stay private on your iPad.
+1. In Pythonista, make a folder and put **`Home.py`** in it. Run `Home.py` from now on:
+   every time it opens it downloads the newest hub files from this repository, so updates arrive by themselves.
 2. **Add the TV to Apple Home:** on the TV, go to Settings > Connection > AirPlay and HomeKit > HomeKit > Set Up.
    On the iPad, open the Home app, tap **+ > Add Accessory**, and scan the code. Check that the Home app can turn the TV on and off.
 3. **Make two Shortcuts** in the Shortcuts app. Each one uses a **Control Home** action on Living Room TV:

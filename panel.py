@@ -16,9 +16,26 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 HUB_FILE = os.path.join(HERE, "hub.json")
 
 
+PRIVATE_FILE = os.path.join(HERE, "private.json")  # personal settings: stays on this iPad only
+
+
+def merge(base, extra):
+    """Lay private.json's settings over hub.json's (nested sections are merged, not replaced)."""
+    for key, value in extra.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            merge(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
 def load_hub():
     with open(HUB_FILE, encoding="utf-8") as f:
-        return json.load(f)
+        hub = json.load(f)
+    if os.path.exists(PRIVATE_FILE):
+        with open(PRIVATE_FILE, encoding="utf-8") as f:
+            merge(hub, json.load(f))
+    return hub
 
 
 def run_button(button):
