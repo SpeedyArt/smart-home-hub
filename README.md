@@ -1,31 +1,21 @@
 # Smart Home Hub (iPad, Pythonista)
 
-## Privacy and security
-- This repository only holds the hub's code and screen layout. It contains no passwords, keys,
-  addresses, locations or device details.
-- Anything personal goes in **`private.json`** on the iPad. It is never uploaded, downloaded or overwritten,
-  and it is listed in `.gitignore` so it can't be committed by accident.
-- Nobody can control your TV or other devices from this code. The buttons only ask the Apple Shortcuts app
-  on *your* iPad to act, and Apple Home only accepts commands from your own Apple Account.
-- Only you can change this repository. Keep two-factor authentication on for your GitHub account.
-
 Your own smart home hub. It runs in Pythonista on the iPad, with no PC needed.
 Everything you see comes from **hub.json**, so you can change it as much as you like.
 
 ## Setup (one time)
-1. In Pythonista, make a folder and put **`Home.py`** in it. Run `Home.py` from now on:
-   every time it opens it downloads the newest hub files from this repository, so updates arrive by themselves.
+1. Put `panel.py`, `panel.html` and `hub.json` in one folder in Pythonista (replace old copies).
 2. **Add the TV to Apple Home:** on the TV, go to Settings > Connection > AirPlay and HomeKit > HomeKit > Set Up.
    On the iPad, open the Home app, tap **+ > Add Accessory**, and scan the code. Check that the Home app can turn the TV on and off.
 3. **Make two Shortcuts** in the Shortcuts app. Each one uses a **Control Home** action on Living Room TV:
    one called exactly **TV On** (turns it on) and one called **TV Off** (turns it off).
-4. Open `Home.py` in Pythonista and tap ▶.
+4. Open `panel.py` in Pythonista and tap ▶.
 
-Home Screen icon: in Pythonista open `Home.py`, tap the wrench > **Shortcuts… > Home Screen**.
+Home Screen icon: in Pythonista open `panel.py`, tap the wrench > **Shortcuts… > Home Screen**.
 Keep it on: Settings > Display & Brightness > Auto-Lock > **Never**, and leave the iPad charging.
 
 ## Customising (hub.json)
-Open `hub.json` in Pythonista (or add a button with `"edit": true` to open it from the hub). Save it and run `Home.py` again.
+Open `hub.json` in Pythonista (or add a button with `"edit": true` to open it from the hub). Save it and run `panel.py` again.
 
 ```
 rooms -> devices -> buttons
@@ -54,13 +44,16 @@ If the weather can't load, a short message there says why.
 Heads-ups appear under the weather when they matter: "Rain in ~20 mins", "Rain easing off in ~30 mins",
 "Rain likely around 6 PM", frost overnight, and strong gusts. Set `"show": false` to hide it.
 
-**Night mode:** tap the moon button at the top to switch, or let it switch by itself.
+**Night mode:** tap the cat to switch (it falls asleep), or let it switch by itself.
 Under `night`: `"auto": true` uses the `"start"` / `"end"` times (24-hour, e.g. "22:00"), and `"brightness"`
 (0 to 1) dims the iPad screen at night. Remove `brightness` to leave the screen alone.
 
-**Timer:** tap the Timer card. Drag around the ring (each full turn is an hour, up to 12 hours),
+**Timer:** tap the Timer bubble. Drag around the ring (each full turn is an hour, up to 12 hours),
 or tap a quick time. While it runs you can add time, pause or cancel. Set `"timer": {"show": false}` to hide it.
 Keep the iPad's volume up to hear the chime.
+
+**Layout:** a cosy room. The cat sits on the windowsill, and the window shows the live weather
+(sun, clouds, rain, snow, storms, and the moon and stars at night). Controls are round bubbles on the left.
 
 **Theme:** `"style": "ginger-cat"` gives the ginger cat theme. Remove it for the original purple look.
 `theme.background` is the two background gradient colours, `theme.glow` is the two soft glows,

@@ -12,7 +12,7 @@
          padding:max(36px,env(safe-area-inset-top)) 48px 36px; }
   #app.scrolls { overflow-y:auto; touch-action:pan-y; }
   #app:not(.scrolls), #board, #rooms { pointer-events:none; }
-  header, #board > section, #rooms > section, .card { pointer-events:auto; }
+  header, #board > section, #rooms > section, .card, .bubble { pointer-events:auto; }
   button { touch-action:manipulation; }
   body { --bg1:#0b1020; --bg2:#1a1240; --glow1:#2b1d6b; --glow2:#0f3b5c; --text:#f5f6fa; }
   body {
@@ -91,7 +91,7 @@
   .zzz { position:fixed; font:700 34px -apple-system,system-ui,sans-serif; color:#cfc6ff; opacity:0; pointer-events:none; z-index:-1; }
   body.night .zzz { animation:zzz 4.5s ease-in-out infinite; }
   @keyframes zzz { 0% { opacity:0; transform:translate(0,0) scale(.6) rotate(-8deg); }
-                   20% { opacity:.9; } 100% { opacity:0; transform:translate(40px,-110px) scale(1.2) rotate(10deg); } }
+                   20% { opacity:.9; } 100% { opacity:0; transform:translate(-34px,-70px) scale(1.2) rotate(-10deg); } }
   .ripple { position:fixed; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; pointer-events:none; z-index:50;
             border:2px solid rgba(255,225,190,.3); animation:ripple 2.8s cubic-bezier(.25,.6,.3,1) forwards; }
   @keyframes ripple { from { transform:scale(0); opacity:1; } to { transform:scale(var(--s)); opacity:0; } }
@@ -145,12 +145,120 @@
   #tail { transform-box:view-box; transform-origin:300px 370px; animation:sway 4s ease-in-out infinite; }
   body.night #tail { animation-play-state:paused; }
   @keyframes sway { 0%, 100% { transform:rotate(0deg); } 50% { transform:rotate(7deg); } }
-  @media (max-width:700px) { #app { padding:32px 20px 120px; } #clock { font-size:64px; } header { display:block; } }
+
+  /* ===== Cosy window layout ===== */
+  :root { --sill:15vh; --ww:min(34vw,400px); --clk:min(15vw,124px); }
+  #app { padding:0; }
+  header { position:absolute; left:4.5vw; top:max(4.5vh,env(safe-area-inset-top)); display:block; margin:0; }
+  #greet { font-size:24px; font-weight:500; opacity:.75; margin:0 0 2px; }
+  #clock { font-size:var(--clk); letter-spacing:-5px; line-height:.92; }
+  #date { font-size:22px; opacity:.7; margin-top:8px; }
+  #controls { position:absolute; left:4.5vw; top:calc(max(4.5vh,env(safe-area-inset-top)) + var(--clk) + 110px);
+              display:flex; flex-direction:column; gap:16px; pointer-events:auto; }
+  .roomlabel { font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; opacity:.55; margin:6px 0 -4px 8px; }
+  .bubble { display:flex; align-items:center; gap:16px; padding:12px 14px 12px 12px; border-radius:999px; width:min(380px,40vw);
+            background:rgba(255,236,214,.12); border:1px solid rgba(255,214,170,.28);
+            -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); transition:background 2.4s, border-color 2.4s; }
+  .bubble .bi { width:62px; height:62px; border-radius:50%; flex:none; display:grid; place-items:center;
+                background:rgba(255,170,90,.28); position:relative; }
+  .bubble .bt { flex:1; min-width:0; }
+  .bubble .name { font-size:21px; font-weight:600; }
+  .bubble .state, #tcSub { font-size:15px; opacity:.65; margin-top:1px; }
+  .bubble .acts { display:flex; gap:10px; }
+  .bubble .btn { flex:none; width:58px; height:58px; min-height:0; border-radius:50%; padding:0; font-size:0; }
+  .bubble .btn svg { width:26px; height:26px; }
+  #timerCard { cursor:pointer; }
+  #timerCard .mini { width:62px; height:62px; }
+  #timerCard .mini svg { width:62px; height:62px; }
+  #timerCard .mini .lbl svg { width:26px; height:26px; }
+  #tcText { font-size:21px; font-weight:600; font-variant-numeric:tabular-nums; }
+  body.night .bubble { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.1); }
+
+  /* Window */
+  #windowWrap { position:absolute; right:5vw; top:max(5vh,env(safe-area-inset-top)); width:var(--ww); text-align:center; pointer-events:auto; }
+  #window { position:relative; width:100%; aspect-ratio:1.3; border-radius:999px 999px 22px 22px / 60% 60% 22px 22px; overflow:hidden;
+            border:10px solid #ffe6c9; box-shadow:inset 0 0 0 4px #e8b47a, 0 24px 60px rgba(0,0,0,.35); background:#9ed0ff;
+            transition:border-color 2.4s, box-shadow 2.4s; }
+  body.night #window { border-color:#8c7a6a; box-shadow:inset 0 0 0 4px #5a4636, 0 24px 60px rgba(0,0,0,.5); }
+  #window .bar { position:absolute; background:#ffe6c9; z-index:5; transition:background 2.4s; }
+  body.night #window .bar { background:#8c7a6a; }
+  #window .bar.v { left:50%; top:0; bottom:0; width:8px; margin-left:-4px; }
+  #window .bar.h { top:56%; left:0; right:0; height:8px; }
+  .sky { position:absolute; inset:0; transition:opacity 2.4s ease; }
+  .sky.day { background:linear-gradient(180deg,#8cc8ff 0%,#bfe0ff 55%,#ffd9a8 100%); }
+  .sky.night { background:linear-gradient(180deg,#0b1030 0%,#1d1a48 60%,#3b2350 100%); opacity:0; }
+  body.night .sky.night { opacity:1; }
+  .wx-cloudy .sky.day, .wx-rain .sky.day, .wx-fog .sky.day { background:linear-gradient(180deg,#9fb2c4,#c9d3dc 60%,#e2cdb6); }
+  .wx-storm .sky.day { background:linear-gradient(180deg,#5f6b7d,#8f9aa8 60%,#b9a58f); }
+  #sun { position:absolute; left:16%; top:14%; width:22%; aspect-ratio:1; border-radius:50%; background:#fff2b0;
+         box-shadow:0 0 40px 10px rgba(255,242,176,.8); transition:opacity 2.4s, transform 2.4s; animation:sunpulse 6s ease-in-out infinite; }
+  @keyframes sunpulse { 50% { box-shadow:0 0 60px 18px rgba(255,242,176,.9); } }
+  #moon { position:absolute; right:18%; top:14%; width:16%; aspect-ratio:1; border-radius:50%; background:#fdf4d7;
+          box-shadow:-10px 4px 0 0 #fdf4d7 inset, 0 0 30px rgba(253,244,215,.5); opacity:0; transition:opacity 2.4s; }
+  body.night #moon { opacity:1; } body.night #sun { opacity:0; transform:translateY(40px); }
+  .wx-cloudy #sun, .wx-rain #sun, .wx-storm #sun, .wx-snow #sun, .wx-fog #sun { opacity:0; }
+  .wstar { position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; opacity:0; transition:opacity 2.4s; animation:twinkle 3s infinite; }
+  body.night .wstar { opacity:.8; }
+  .cloudy-hide .wstar { display:none; }
+  .wcloud { position:absolute; height:15%; border-radius:999px; background:#fff; opacity:.92; animation:drift linear infinite; }
+  .wcloud:before, .wcloud:after { content:''; position:absolute; background:inherit; border-radius:50%; }
+  .wcloud:before { width:45%; height:150%; left:15%; bottom:30%; } .wcloud:after { width:35%; height:120%; right:15%; bottom:35%; }
+  @keyframes drift { from { transform:translateX(-140%); } to { transform:translateX(560%); } }
+  .wcloud.dark { background:#7d8896; }
+  body.night .wcloud { background:#4b4a6e; opacity:.8; }
+  .drop { position:absolute; top:-12%; width:2px; height:12%; background:linear-gradient(transparent,rgba(255,255,255,.85)); border-radius:2px;
+          animation:fall linear infinite; display:none; }
+  @keyframes fall { to { transform:translateY(1000%) translateX(-18px); } }
+  .wx-rain .drop, .wx-storm .drop { display:block; }
+  .flake { position:absolute; top:-6%; width:7px; height:7px; border-radius:50%; background:#fff; animation:snow linear infinite; display:none; }
+  @keyframes snow { to { transform:translateY(1700%) translateX(20px); } }
+  .wx-snow .flake { display:block; }
+  #fog { position:absolute; inset:0; background:linear-gradient(transparent,rgba(255,255,255,.7)); opacity:0; transition:opacity 2s; }
+  .wx-fog #fog { opacity:1; }
+  #flash { position:absolute; inset:0; background:#fff; opacity:0; }
+  .wx-storm #flash { animation:flash 7s infinite; }
+  @keyframes flash { 0%,90%,94%,100% { opacity:0; } 91%,95% { opacity:.7; } }
+  .curtain { position:absolute; top:-14px; height:calc(var(--ww) / 1.3 + 44px); width:17%; z-index:6; pointer-events:none;
+             background:repeating-linear-gradient(90deg,#d9542a 0 14px,#c2441f 14px 26px); border-radius:0 0 40% 40%;
+             box-shadow:0 10px 20px rgba(0,0,0,.25); transition:filter 2.4s; }
+  .curtain.l { left:-13%; transform:skewX(4deg); } .curtain.r { right:-13%; transform:skewX(-4deg); }
+  body.night .curtain { filter:brightness(.55); }
+  #weather { display:block; text-align:center; margin-top:16px; }
+  #wtemp { font-size:52px; }
+  #wdesc { font-size:17px; }
+  #alerts { align-items:center; }
+  #weather > svg { display:none; }
+
+  /* Windowsill, cat, mug */
+  #sill { position:fixed; left:0; right:0; bottom:0; height:var(--sill); z-index:-1; pointer-events:none;
+          background:linear-gradient(#a45a22,#7a3a12); box-shadow:0 -8px 0 #c2733a, 0 -30px 60px rgba(0,0,0,.25); transition:filter 2.4s; }
+  body.night #sill { filter:brightness(.5) saturate(.8); }
+  #catWrap { position:fixed; left:43vw; bottom:calc(var(--sill) - 1.2vh); width:min(25vw,290px); z-index:1; }
+  #cat { position:static; width:100%; right:auto; bottom:auto; z-index:auto; display:block; }
+  #catWrap .zzz { position:absolute; z-index:2; }
+  #mug { position:fixed; left:calc(43vw + min(25vw,290px) + 3vw); bottom:calc(var(--sill) - 2px); width:64px; height:56px; z-index:1;
+         background:#fff4e6; border-radius:4px 4px 20px 20px; transition:filter 2.4s; pointer-events:none; }
+  #mug:after { content:''; position:absolute; right:-20px; top:10px; width:20px; height:24px; border:7px solid #fff4e6; border-left:none; border-radius:0 16px 16px 0; }
+  body.night #mug { filter:brightness(.55); }
+  .steam { position:absolute; bottom:100%; width:8px; height:34px; border-radius:8px; background:rgba(255,255,255,.35);
+           filter:blur(3px); animation:steam 3.2s ease-in infinite; opacity:0; }
+  @keyframes steam { 0% { opacity:0; transform:translateY(8px) scaleY(.6); } 40% { opacity:.8; } 100% { opacity:0; transform:translateY(-28px) translateX(6px) scaleY(1.2); } }
+  body.night .steam { display:none; }
+  @media (orientation:portrait) {
+    :root { --ww:38vw; --clk:11vw; }
+    #windowWrap { top:max(4vh,env(safe-area-inset-top)); }
+    .bubble { width:min(400px,52vw); }
+    #catWrap { left:30vw; width:min(40vw,320px); }
+    #mug { left:calc(30vw + min(40vw,320px) + 4vw); }
+  }
+  @media (max-width:700px) { #clock { font-size:64px; } }
 </style>
 </head>
 <body>
 <div id="bg-day"></div><div id="bg-night"></div>
 <div id="paws"></div>
+<div id="sill"></div>
+<div id="catWrap">
 <svg id="cat" viewBox="0 0 400 420" hidden>
   <!-- tail -->
   <g id="tail">
@@ -185,22 +293,32 @@
   <!-- blush -->
   <ellipse cx="146" cy="176" rx="14" ry="8" fill="#ff9e8a" opacity=".6"/><ellipse cx="254" cy="176" rx="14" ry="8" fill="#ff9e8a" opacity=".6"/>
 </svg>
-<span class="zzz" style="right:calc(min(46vw,520px)*.16);bottom:calc(min(46vw,520px)*.80)">z</span>
-<span class="zzz" style="right:calc(min(46vw,520px)*.12);bottom:calc(min(46vw,520px)*.84);animation-delay:1.5s;font-size:26px">z</span>
-<span class="zzz" style="right:calc(min(46vw,520px)*.08);bottom:calc(min(46vw,520px)*.78);animation-delay:3s;font-size:42px">Z</span>
+<span class="zzz" style="left:6%;top:18%">z</span>
+<span class="zzz" style="left:-2%;top:12%;animation-delay:1.5s;font-size:26px">z</span>
+<span class="zzz" style="left:-10%;top:16%;animation-delay:3s;font-size:42px">Z</span>
+</div>
+<div id="mug"><i class="steam" style="left:14px"></i><i class="steam" style="left:28px;animation-delay:1s"></i><i class="steam" style="left:42px;animation-delay:2s"></i></div>
 <div id="app">
 <header id="header"></header>
-<div id="board">
-<section id="timerSection" hidden>
-  <h2>Timer</h2>
-  <div class="grid"><div class="card timer-card" id="timerCard">
-    <div class="mini"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,.14)" stroke-width="9" fill="none"/>
-      <circle id="miniArc" cx="50" cy="50" r="42" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"/></svg>
-      <div class="lbl" id="miniIcon"></div></div>
-    <div><div id="tcText">Set a timer</div><div id="tcSub">Tap to choose any time</div></div>
-  </div></div>
-</section>
-<main id="rooms"></main>
+<div id="windowWrap">
+  <div id="window">
+    <div class="sky day"></div><div class="sky night" id="nightSky"></div>
+    <div id="sun"></div><div id="moon"></div>
+    <div id="clouds"></div><div id="precip"></div><div id="fog"></div><div id="flash"></div>
+    <div class="bar v"></div><div class="bar h"></div>
+  </div>
+  <div class="curtain l"></div><div class="curtain r"></div>
+</div>
+<div id="controls">
+  <div id="timerSection" hidden>
+    <div class="bubble" id="timerCard">
+      <div class="bi mini"><svg viewBox="0 0 100 100" style="transform:rotate(-90deg)"><circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,.14)" stroke-width="9" fill="none"/>
+        <circle id="miniArc" cx="50" cy="50" r="42" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"/></svg>
+        <div class="lbl" id="miniIcon"></div></div>
+      <div class="bt"><div id="tcText">Timer</div><div id="tcSub">Tap to set any time</div></div>
+    </div>
+  </div>
+  <div id="rooms"></div>
 </div>
 </div>
 <div id="toast"></div>
@@ -261,9 +379,9 @@ else $('paws').hidden = true;
 // Header
 $('header').innerHTML = HUB.show_clock === false
   ? `<div id="clock" style="font-size:56px">${esc(HUB.title || 'Home')}</div>`
-  : `<div><div id="clock"></div><div id="date"></div><div id="greet"></div></div>`;
+  : `<div><div id="greet"></div><div id="clock"></div><div id="date"></div></div>`;
 if ((HUB.weather || {}).show !== false)
-  $('header').insertAdjacentHTML('beforeend', '<div id="weather"><div id="wdesc">Loading weather…</div></div>');
+  $('windowWrap').insertAdjacentHTML('beforeend', '<div id="weather"><div id="wdesc">Loading weather…</div></div>');
 function tick() {
   if (HUB.show_clock === false) return;
   const d = new Date(), h = d.getHours();
@@ -299,7 +417,29 @@ function setWeather(d, place) {
       <div id="alerts"></div>
     </div>${svg(icon)}`;
   renderAlerts();
+  windowWeather(d.current.weather_code);
 }
+
+// The window shows the weather outside: sun, clouds, rain, snow, fog, storms, and the moon and stars at night.
+function windowWeather(code) {
+  const kind = code <= 1 ? 'clear' : code <= 2 ? 'partly' : code <= 3 ? 'cloudy' : code <= 48 ? 'fog'
+    : code <= 67 || (code >= 80 && code <= 82) ? 'rain' : code <= 86 ? 'snow' : 'storm';
+  $('window').className = 'wx-' + kind;
+  const nClouds = {clear: 0, partly: 2, cloudy: 4, fog: 3, rain: 4, snow: 3, storm: 5}[kind];
+  $('clouds').innerHTML = Array.from({length: nClouds}, (_, i) =>
+    `<i class="wcloud${['rain', 'storm'].includes(kind) ? ' dark' : ''}" style="top:${20 + (i * 13) % 34}%;width:${26 + (i * 7) % 16}%;`
+    + `animation-duration:${40 + i * 13}s;animation-delay:-${i * 11}s"></i>`).join('');
+}
+(function buildWindow() {
+  let html = '';
+  for (let i = 0; i < 46; i++) html += `<i class="drop" style="left:${Math.random() * 105}%;animation-duration:${.5 + Math.random() * .4}s;animation-delay:-${Math.random()}s"></i>`;
+  for (let i = 0; i < 34; i++) html += `<i class="flake" style="left:${Math.random() * 100}%;animation-duration:${5 + Math.random() * 5}s;animation-delay:-${Math.random() * 8}s;transform:scale(${.5 + Math.random() * .7})"></i>`;
+  $('precip').innerHTML = html;
+  let stars = '';
+  for (let i = 0; i < 26; i++) stars += `<i class="wstar" style="left:${Math.random() * 100}%;top:${Math.random() * 60}%;animation-delay:-${Math.random() * 3}s"></i>`;
+  $('nightSky').innerHTML = stars;
+  windowWeather(2);
+})();
 
 // Heads-ups like "Rain in ~20 mins", worked out from the forecast (re-checked every minute).
 const toDate = s => new Date(s);  // forecast times are local, e.g. "2026-10-22T16:15"
@@ -344,21 +484,19 @@ function weatherMsg(text) {
   if ($('weather') && !$('wtemp')) $('weather').innerHTML = `<div id="wdesc">${esc(text)}</div>`;
 }
 
-// Rooms, devices, buttons
-$('rooms').innerHTML = (HUB.rooms || []).map((room, r) => `<section class="room">
-  <h2>${esc(room.name)}</h2>
-  <div class="grid">${(room.devices || []).map((dev, d) => `
-    <div class="card">
-      <div class="top">
-        <div class="ico">${svg(dev.icon)}</div>
-        <div><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">Ready</div></div>
+// Rooms, devices, buttons (one bubble per device)
+$('rooms').innerHTML = (HUB.rooms || []).map((room, r) => `
+  ${(HUB.rooms || []).length > 1 ? `<div class="roomlabel">${esc(room.name)}</div>` : ''}
+  ${(room.devices || []).map((dev, d) => `
+    <div class="bubble">
+      <div class="bi">${svg(dev.icon)}</div>
+      <div class="bt"><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">${esc(room.name)}</div></div>
+      <div class="acts">${(dev.buttons || []).map((b, i) => `
+        <button class="btn" style="--c:${esc(b.color || '#cfd3dc')}" data-id="${r}-${d}-${i}" data-label="${esc(b.label)}" aria-label="${esc(b.label)}">
+          ${svg(b.icon || 'power')}</button>`).join('')}
       </div>
-      <div class="actions">${(dev.buttons || []).map((b, i) => `
-        <button class="btn" style="--c:${esc(b.color || '#cfd3dc')}" data-id="${r}-${d}-${i}">
-          ${b.icon ? svg(b.icon) : ''}${esc(b.label)}</button>`).join('')}
-      </div>
-    </div>`).join('')}
-  </div></section>`).join('');
+    </div>`).join('')}`).join('');
+$('rooms').style.cssText = 'display:flex;flex-direction:column;gap:16px';
 
 let toastTimer;
 function toast(msg) {
@@ -372,7 +510,7 @@ function done(id, ok, message) {
   btn.classList.remove('busy');
   const st = $(`s-${r}-${d}`);
   st.className = 'state ' + (ok ? 'ok' : 'err');
-  st.textContent = ok ? btn.textContent.trim() : 'Failed';
+  st.textContent = ok ? 'Turned ' + btn.dataset.label.toLowerCase() : 'Failed';
   if (message) toast(ok ? message : 'Failed: ' + message);
 }
 
@@ -581,7 +719,7 @@ function resetTimer() {
   lastFrame = 0;
   $('sheetPanel').classList.remove('running');
   $('miniArc').style.strokeDashoffset = MINI;
-  $('tcText').textContent = 'Set a timer'; $('tcSub').textContent = 'Tap to choose any time';
+  $('tcText').textContent = 'Timer'; $('tcSub').textContent = 'Tap to set any time';
   drawSet();
 }
 $('tStart').onclick = startTimer;
