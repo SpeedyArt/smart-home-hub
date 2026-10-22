@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Home</title>
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+  html, body { margin:0; position:fixed; inset:0; width:100%; height:100%; overflow:hidden;
+               overscroll-behavior:none; touch-action:none; -webkit-text-size-adjust:100%; }
+  #app { position:absolute; inset:0; overflow:hidden; overscroll-behavior:none; touch-action:none;
+         padding:max(36px,env(safe-area-inset-top)) 48px 36px; }
+  #app.scrolls { overflow-y:auto; touch-action:pan-y; }
+  #app:not(.scrolls), #board, #rooms { pointer-events:none; }
+  header, #board > section, #rooms > section, .card { pointer-events:auto; }
+  button { touch-action:manipulation; }
+  body { --bg1:#0b1020; --bg2:#1a1240; --glow1:#2b1d6b; --glow2:#0f3b5c; --text:#f5f6fa; }
+  body {
+    color:var(--text); font-family:-apple-system,system-ui,sans-serif;
+    background:var(--bg1); transition:color 2.4s ease;
+  }
+  header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:8px; gap:24px; }
+  #clock { white-space:nowrap; font-size:96px; font-weight:200; letter-spacing:-3px; line-height:1; }
+  #date, #greet { font-size:22px; opacity:.6; margin-top:10px; }
+  #greet { font-size:28px; font-weight:500; }
+  h2 { font-size:15px; font-weight:600; letter-spacing:2px; text-transform:uppercase; opacity:.6; margin:28px 0 14px; }
+  #board { display:flex; flex-wrap:wrap; gap:0 24px; align-items:flex-start; }
+  #rooms { display:contents; }
+  .grid { display:flex; flex-wrap:wrap; gap:24px; }
+  .card { width:320px; max-width:100%; }
+  .card { background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); border-radius:32px; padding:28px;
+          -webkit-backdrop-filter:blur(30px); backdrop-filter:blur(30px); }
+  .top { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+  .ico { width:56px; height:56px; border-radius:18px; display:grid; place-items:center; background:rgba(255,255,255,.1); flex:none; }
+  svg { width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .name { font-size:24px; font-weight:600; }
+  .state { font-size:16px; opacity:.6; margin-top:2px; }
+  .state.ok { color:#3ddc97; opacity:1; } .state.err { color:#ff5c7a; opacity:1; }
+  .actions { display:flex; flex-wrap:wrap; gap:14px; }
+  .btn { flex:1 1 40%; min-height:84px; border:0; border-radius:22px; font:600 21px -apple-system,system-ui,sans-serif;
+         color:#141414; display:flex; align-items:center; justify-content:center; gap:10px;
+         background:var(--c); box-shadow:0 10px 30px color-mix(in srgb, var(--c) 35%, transparent);
+         transition:transform .12s, opacity .2s; }
+  .btn svg { width:24px; height:24px; stroke-width:2.2; }
+  .btn:active { transform:scale(.95); }
+  .btn.busy { opacity:.55; pointer-events:none; }
+  #toast { position:fixed; left:50%; bottom:40px; transform:translate(-50%,160px); max-width:80%;
+           background:rgba(20,20,30,.88); border:1px solid rgba(255,255,255,.12); padding:16px 24px; border-radius:18px;
+           font-size:17px; transition:transform .35s cubic-bezier(.2,.9,.3,1.2); }
+  #toast.show { transform:translate(-50%,0); }
+  /* Weather */
+  #weather { display:flex; align-items:center; gap:18px; text-align:right; }
+  #weather svg { width:64px; height:64px; stroke-width:1.5; }
+  #wtemp { font-size:56px; font-weight:300; line-height:1; }
+  #wdesc { font-size:18px; opacity:.7; margin-top:6px; }
+  #alerts { display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-top:12px; }
+  .alert { display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; font-size:16px; font-weight:600;
+           background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18); animation:alertIn .6s cubic-bezier(.2,1.2,.3,1) both; }
+  #weather .alert svg { width:20px; height:20px; stroke-width:2; flex:none; }
+  #weather > svg { align-self:flex-start; margin-top:8px; }
+  .alert.soon { background:rgba(120,180,255,.22); border-color:rgba(150,200,255,.4); animation:alertIn .6s cubic-bezier(.2,1.2,.3,1) both, glow 2.4s ease-in-out .6s infinite; }
+  @keyframes alertIn { from { opacity:0; transform:translateY(-6px) scale(.95); } }
+  @keyframes glow { 50% { box-shadow:0 0 18px rgba(140,190,255,.45); } }
+  #wplace { font-size:14px; opacity:.5; margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
+
+  /* Ginger cat theme */
+  body.ginger-cat { --bg1:#3a1d0e; --bg2:#7a3a12; --glow1:#ff9a3c; --glow2:#ffcf8a; --text:#fff4e6; }
+  body.ginger-cat .card { background:rgba(255,236,214,.10); border-color:rgba(255,214,170,.25); }
+  body.ginger-cat .ico { background:rgba(255,170,90,.25); }
+  #cat { position:fixed; right:-10px; bottom:-6px; width:min(46vw,520px); height:auto; filter:drop-shadow(0 20px 40px rgba(0,0,0,.35)); pointer-events:auto; cursor:pointer; z-index:-1; }
+  #paws { position:fixed; inset:0; pointer-events:none; z-index:-2; opacity:.05; background-size:220px;
+          background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%23fff'%3E%3Cellipse cx='40' cy='52' rx='11' ry='9'/%3E%3Ccircle cx='27' cy='38' r='5'/%3E%3Ccircle cx='37' cy='31' r='5'/%3E%3Ccircle cx='48' cy='31' r='5'/%3E%3Ccircle cx='56' cy='39' r='5'/%3E%3Cg transform='translate(80 80) rotate(25)'%3E%3Cellipse cx='20' cy='32' rx='11' ry='9'/%3E%3Ccircle cx='7' cy='18' r='5'/%3E%3Ccircle cx='17' cy='11' r='5'/%3E%3Ccircle cx='28' cy='11' r='5'/%3E%3Ccircle cx='36' cy='19' r='5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+  #bg-day, #bg-night { position:fixed; inset:0; z-index:-5; pointer-events:none;
+    background:radial-gradient(1200px 800px at 15% 10%, var(--glow1) 0%, transparent 60%),
+               radial-gradient(900px 700px at 90% 90%, var(--glow2) 0%, transparent 60%),
+               linear-gradient(160deg,var(--bg1),var(--bg2)); }
+  #bg-night { z-index:-4; visibility:hidden;
+    --bg1:#07071a; --bg2:#1b1338; --glow1:#2a2160; --glow2:#3a1c10; }
+  body.ginger-cat #bg-night { --bg1:#0c0816; --bg2:#22142a; --glow1:#33224f; --glow2:#4a210c; }
+  .star { position:absolute; width:3px; height:3px; border-radius:50%; background:#fff;
+          animation:twinkle var(--d) ease-in-out infinite; animation-delay:var(--delay); }
+  @keyframes twinkle { 0%,100% { opacity:.15; transform:scale(.6); } 50% { opacity:.9; transform:scale(1); } }
+
+  /* Night mode */
+  body.night { --text:#e9e3f5; }
+  body.night .card { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.08); }
+  body.night .btn { filter:brightness(.8) saturate(.85); }
+  body.night #paws { opacity:.025; }
+  .card, .btn, #paws, #cat, .ico { transition:background 2.4s ease, border-color 2.4s ease, filter 2.4s ease, opacity 2.4s ease; }
+  body.night #cat { filter:drop-shadow(0 20px 40px rgba(0,0,0,.5)) brightness(.62) saturate(.8); }
+  .zzz { position:fixed; font:700 34px -apple-system,system-ui,sans-serif; color:#cfc6ff; opacity:0; pointer-events:none; z-index:-1; }
+  body.night .zzz { animation:zzz 4.5s ease-in-out infinite; }
+  @keyframes zzz { 0% { opacity:0; transform:translate(0,0) scale(.6) rotate(-8deg); }
+                   20% { opacity:.9; } 100% { opacity:0; transform:translate(40px,-110px) scale(1.2) rotate(10deg); } }
+  .ripple { position:fixed; width:40px; height:40px; margin:-20px 0 0 -20px; border-radius:50%; pointer-events:none; z-index:50;
+            border:2px solid rgba(255,225,190,.3); animation:ripple 2.8s cubic-bezier(.25,.6,.3,1) forwards; }
+  @keyframes ripple { from { transform:scale(0); opacity:1; } to { transform:scale(var(--s)); opacity:0; } }
+
+  /* Timer card */
+  .timer-card { display:flex; align-items:center; gap:22px; cursor:pointer; }
+  .mini { width:92px; height:92px; flex:none; position:relative; }
+  .mini svg { width:92px; height:92px; transform:rotate(-90deg); }
+  .mini .lbl { position:absolute; inset:0; display:grid; place-items:center; }
+  .mini .lbl svg { width:30px; height:30px; transform:none; }
+  #tcText { white-space:nowrap; font-size:30px; font-weight:300; font-variant-numeric:tabular-nums; }
+  #tcSub { font-size:16px; opacity:.6; margin-top:4px; }
+
+  /* Timer sheet */
+  #sheet { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:rgba(10,6,4,.45);
+           -webkit-backdrop-filter:blur(24px) saturate(1.2); backdrop-filter:blur(24px) saturate(1.2);
+           opacity:0; pointer-events:none; transition:opacity .35s; }
+  #sheet.open { opacity:1; pointer-events:auto; }
+  #sheet .panel { width:min(620px,92vw); text-align:center; transform:translateY(40px) scale(.96);
+                  transition:transform .5s cubic-bezier(.2,1.2,.3,1); }
+  #sheet.open .panel { transform:none; }
+  #dialWrap { position:relative; width:min(420px,78vw,52vh); aspect-ratio:1; margin:0 auto; touch-action:none; }
+  #dial { width:100%; height:100%; overflow:visible; }
+  #dial .track { stroke:rgba(255,255,255,.12); stroke-width:22; fill:none; }
+  #dial .arc { stroke:url(#tgrad); stroke-width:22; fill:none; stroke-linecap:round;
+               filter:drop-shadow(0 0 10px rgba(255,170,80,.55)); }
+  #dial .lap { stroke:rgba(255,200,140,.35); stroke-width:22; fill:none; }
+  #dial .tick { stroke:rgba(255,255,255,.25); stroke-width:2; }
+  #dial .tick.big { stroke:rgba(255,255,255,.6); stroke-width:3; }
+  #knob { fill:#fff; stroke:none; filter:drop-shadow(0 4px 10px rgba(0,0,0,.4)); transition:r .15s; }
+  #dialWrap.dragging #knob { r:22; }
+  #readout { position:absolute; inset:0; display:grid; place-content:center; pointer-events:none; }
+  #rTime { font-size:clamp(48px,11vw,82px); font-weight:200; letter-spacing:-2px; font-variant-numeric:tabular-nums; }
+  #rHint { font-size:16px; opacity:.6; margin-top:6px; }
+  .chips { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:26px 0 22px; }
+  .chip { border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:var(--text);
+          font:600 18px -apple-system,system-ui,sans-serif; padding:12px 18px; border-radius:999px; transition:transform .12s, background .2s; }
+  .chip:active { transform:scale(.92); background:rgba(255,255,255,.2); }
+  .row { display:flex; gap:14px; justify-content:center; }
+  .row .btn { flex:0 1 200px; }
+  .ghost { --c:rgba(255,255,255,.14); color:var(--text) !important; box-shadow:none !important; }
+  .running .setonly { display:none; } .runonly { display:none; } .running .runonly { display:flex; }
+  #dialWrap.ringing { animation:ring .5s ease-in-out infinite; }
+  @keyframes ring { 0%,100% { transform:rotate(0); } 25% { transform:rotate(-3deg); } 75% { transform:rotate(3deg); } }
+  body:not(.ginger-cat) .zzz { display:none; }
+  #eyesShut, #eyesOpen { transition:opacity 1.6s ease; }
+  body:not(.night) #eyesShut, body.night #eyesOpen { opacity:0; }
+  .eye { transform-box:fill-box; transform-origin:center; animation:blink 5.5s infinite; }
+  .eye + .eye { animation-delay:.04s; }
+  @keyframes blink { 0%, 93%, 100% { transform:scaleY(1); } 96% { transform:scaleY(.08); } }
+  #tail { transform-box:view-box; transform-origin:300px 370px; animation:sway 4s ease-in-out infinite; }
+  body.night #tail { animation-play-state:paused; }
+  @keyframes sway { 0%, 100% { transform:rotate(0deg); } 50% { transform:rotate(7deg); } }
+  @media (max-width:700px) { #app { padding:32px 20px 120px; } #clock { font-size:64px; } header { display:block; } }
+</style>
+</head>
+<body>
+<div id="bg-day"></div><div id="bg-night"></div>
+<div id="paws"></div>
+<svg id="cat" viewBox="0 0 400 420" hidden>
+  <!-- tail -->
+  <g id="tail">
+  <path d="M300 380 C380 380 395 300 360 260 C345 243 330 250 338 266 C362 300 350 352 296 356 Z" fill="#e8772a"/>
+  <path d="M352 262 l14 -8 M362 290 l16 -2 M360 322 l16 6" stroke="#b9541a" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <!-- body -->
+  <path d="M110 400 C90 300 120 210 200 200 C285 192 320 300 300 400 Z" fill="#f28c38"/>
+  <path d="M150 400 C145 330 165 270 200 262 C238 270 255 330 250 400 Z" fill="#ffd9b0"/>
+  <path d="M118 300 q22 -6 34 4 M112 340 q24 -6 36 6 M292 300 q-22 -6 -34 4 M298 340 q-24 -6 -36 6" stroke="#c9601f" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <!-- front paws -->
+  <ellipse cx="172" cy="398" rx="26" ry="14" fill="#ffe6c9"/><ellipse cx="232" cy="398" rx="26" ry="14" fill="#ffe6c9"/>
+  <!-- ears -->
+  <path d="M118 120 L128 30 L190 92 Z" fill="#f28c38"/><path d="M282 120 L272 30 L210 92 Z" fill="#f28c38"/>
+  <path d="M134 104 L138 56 L174 92 Z" fill="#ffb6a0"/><path d="M266 104 L262 56 L226 92 Z" fill="#ffb6a0"/>
+  <!-- head -->
+  <ellipse cx="200" cy="150" rx="100" ry="84" fill="#f28c38"/>
+  <path d="M182 72 l6 30 M200 68 v34 M218 72 l-6 30" stroke="#c9601f" stroke-width="8" stroke-linecap="round"/>
+  <path d="M102 150 h28 M100 172 h26 M298 150 h-28 M300 172 h-26" stroke="#c9601f" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="200" cy="186" rx="52" ry="38" fill="#ffd9b0"/>
+  <!-- eyes: asleep at night, awake (and blinking) by day -->
+  <path id="eyesShut" d="M146 146 q16 14 32 0 M222 146 q16 14 32 0" stroke="#3a1d0e" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <g id="eyesOpen">
+    <g class="eye"><ellipse cx="162" cy="146" rx="16" ry="18" fill="#c8e06a" stroke="#3a1d0e" stroke-width="4"/>
+      <ellipse class="pupil" cx="162" cy="147" rx="6" ry="13" fill="#2a160a" stroke="none"/><circle cx="157" cy="139" r="4" fill="#fff" stroke="none"/></g>
+    <g class="eye"><ellipse cx="238" cy="146" rx="16" ry="18" fill="#c8e06a" stroke="#3a1d0e" stroke-width="4"/>
+      <ellipse class="pupil" cx="238" cy="147" rx="6" ry="13" fill="#2a160a" stroke="none"/><circle cx="233" cy="139" r="4" fill="#fff" stroke="none"/></g>
+  </g>
+  <path d="M190 172 h20 l-10 11 Z" fill="#e66b7a"/>
+  <path d="M200 183 q-6 12 -18 8 M200 183 q6 12 18 8" stroke="#3a1d0e" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M150 182 l-50 -8 M150 192 l-50 6 M250 182 l50 -8 M250 192 l50 6" stroke="#fff4e6" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+  <!-- blush -->
+  <ellipse cx="146" cy="176" rx="14" ry="8" fill="#ff9e8a" opacity=".6"/><ellipse cx="254" cy="176" rx="14" ry="8" fill="#ff9e8a" opacity=".6"/>
+</svg>
+<span class="zzz" style="right:calc(min(46vw,520px)*.16);bottom:calc(min(46vw,520px)*.80)">z</span>
+<span class="zzz" style="right:calc(min(46vw,520px)*.12);bottom:calc(min(46vw,520px)*.84);animation-delay:1.5s;font-size:26px">z</span>
+<span class="zzz" style="right:calc(min(46vw,520px)*.08);bottom:calc(min(46vw,520px)*.78);animation-delay:3s;font-size:42px">Z</span>
+<div id="app">
+<header id="header"></header>
+<div id="board">
+<section id="timerSection" hidden>
+  <h2>Timer</h2>
+  <div class="grid"><div class="card timer-card" id="timerCard">
+    <div class="mini"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,.14)" stroke-width="9" fill="none"/>
+      <circle id="miniArc" cx="50" cy="50" r="42" stroke="#ffb547" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="263.9" stroke-dashoffset="263.9"/></svg>
+      <div class="lbl" id="miniIcon"></div></div>
+    <div><div id="tcText">Set a timer</div><div id="tcSub">Tap to choose any time</div></div>
+  </div></div>
+</section>
+<main id="rooms"></main>
+</div>
+</div>
+<div id="toast"></div>
+<div id="sheet"><div class="panel" id="sheetPanel">
+  <div id="dialWrap">
+    <svg id="dial" viewBox="0 0 400 400">
+      <defs><linearGradient id="tgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#ff7a2f"/></linearGradient></defs>
+      <g id="ticks"></g>
+      <circle class="track" cx="200" cy="200" r="160"/>
+      <circle class="lap" id="lap" cx="200" cy="200" r="160" hidden/>
+      <circle class="arc" id="arc" cx="200" cy="200" r="160" transform="rotate(-90 200 200)" stroke-dasharray="1005.3" stroke-dashoffset="1005.3"/>
+      <circle id="knob" cx="200" cy="40" r="17"/>
+    </svg>
+    <div id="readout"><div id="rTime">0:00</div><div id="rHint">Drag around the ring</div></div>
+  </div>
+  <div class="chips setonly" id="chips"></div>
+  <div class="chips runonly" id="runChips"></div>
+  <div class="row setonly"><button class="btn ghost" id="tClose">Close</button><button class="btn" style="--c:#ffb547" id="tStart">Start</button></div>
+  <div class="row runonly"><button class="btn ghost" id="tCancel">Cancel</button><button class="btn" style="--c:#ffb547" id="tPause">Pause</button></div>
+</div></div>
+
+<script>
+// Icons you can use in hub.json ("icon": "...").
+const ICONS = {
+  tv:'<rect x="2.5" y="4" width="19" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/>',
+  power:'<path d="M12 3v9M6.3 6.3a8 8 0 1 0 11.4 0"/>',
+  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  light:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"/>',
+  plug:'<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/>',
+  fan:'<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7s3 4-4 7zM14 12c4 0 7 1 7 4s-4 3-7-4zM12 14c0 4-1 7-4 7s-3-4 4-7zM10 12c-4 0-7-1-7-4s4-3 7 4z"/>',
+  speaker:'<rect x="5" y="2" width="14" height="20" rx="3"/><circle cx="12" cy="14" r="4"/><circle cx="12" cy="6" r="1"/>',
+  music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  thermostat:'<path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z"/>',
+  blinds:'<path d="M3 3h18M5 3v15M19 3v15M5 7h14M5 11h14M5 15h14M12 18v3"/>',
+  camera:'<path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/>',
+  home:'<path d="M3 11l9-8 9 8M5 9.5V21h14V9.5"/>',
+  star:'<path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4 6.5 20.3l1-6.2L3 9.7l6.2-.9z"/>',
+  play:'<path d="M7 4l13 8-13 8z"/>',
+  bed:'<path d="M3 18V7M3 13h18v5M21 13a3 3 0 0 0-3-3h-8v3M7 11a1.5 1.5 0 1 0 0-.1"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>',
+};
+const svg = name => `<svg viewBox="0 0 24 24">${ICONS[name] || ICONS.star}</svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const HUB = window.HUB;
+const $ = id => document.getElementById(id);
+
+// Theme
+const t = HUB.theme || {}, root = document.documentElement.style;
+const setVar = (k, v) => v && document.body.style.setProperty(k, v);
+setVar('--bg1', (t.background||[])[0]); setVar('--bg2', (t.background||[])[1]);
+setVar('--glow1', (t.glow||[])[0]); setVar('--glow2', (t.glow||[])[1]); setVar('--text', t.text);
+document.title = HUB.title || 'Home';
+if (t.style === 'ginger-cat') { document.body.classList.add('ginger-cat'); $('cat').hidden = false; }
+else $('paws').hidden = true;
+
+// Header
+$('header').innerHTML = HUB.show_clock === false
+  ? `<div id="clock" style="font-size:56px">${esc(HUB.title || 'Home')}</div>`
+  : `<div><div id="clock"></div><div id="date"></div><div id="greet"></div></div>`;
+if ((HUB.weather || {}).show !== false)
+  $('header').insertAdjacentHTML('beforeend', '<div id="weather"><div id="wdesc">Loading weather…</div></div>');
+function tick() {
+  if (HUB.show_clock === false) return;
+  const d = new Date(), h = d.getHours();
+  $('clock').textContent = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  $('date').textContent = d.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+  $('greet').textContent = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+tick(); setInterval(tick, 1000);
+
+// Weather (Open-Meteo, free, no account). Codes: https://open-meteo.com/en/docs
+const WX = [[0,'Clear','sun'],[2,'Partly cloudy','partly'],[3,'Cloudy','cloud'],[48,'Foggy','cloud'],
+            [57,'Drizzle','rain'],[67,'Rain','rain'],[77,'Snow','snow'],[82,'Showers','rain'],
+            [86,'Snow showers','snow'],[99,'Thunderstorms','storm']];
+Object.assign(ICONS, {
+  partly:'<path d="M8 3v1M3.5 5.5l.7.7M2 10h1M12.5 5.5l-.7.7"/><path d="M5.5 11a3 3 0 0 1 5.6-1.5"/><path d="M8 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 8 20z"/>',
+  cloud:'<path d="M7 19h11a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A3.5 3.5 0 0 0 7 19z"/>',
+  rain:'<path d="M7 15h11a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A3.5 3.5 0 0 0 7 15zM8 18l-1 3M12 18l-1 3M16 18l-1 3"/>',
+  snow:'<path d="M7 15h11a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A3.5 3.5 0 0 0 7 15zM8 19h.01M12 21h.01M16 19h.01"/>',
+  wind:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
+  storm:'<path d="M7 15h11a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A3.5 3.5 0 0 0 7 15zM13 15l-3 4h4l-3 4"/>',
+});
+const wxFor = code => WX.find(([max]) => code <= max) || WX[WX.length - 1];
+// Called by panel.py, which fetches the forecast every 15 minutes.
+let wxData = null, wxPlace = '';
+function setWeather(d, place) {
+  if (!$('weather')) return;
+  wxData = d; wxPlace = place;
+  const [, text, icon] = wxFor(d.current.weather_code), day = d.daily;
+  $('weather').innerHTML = `<div>
+      <div id="wtemp">${Math.round(d.current.temperature_2m)}°</div>
+      <div id="wdesc">${text} · H ${Math.round(day.temperature_2m_max[0])}° L ${Math.round(day.temperature_2m_min[0])}° · ${day.precipitation_probability_max[0] ?? 0}% rain</div>
+      ${place ? `<div id="wplace">${esc(place)}</div>` : ''}
+      <div id="alerts"></div>
+    </div>${svg(icon)}`;
+  renderAlerts();
+}
+
+// Heads-ups like "Rain in ~20 mins", worked out from the forecast (re-checked every minute).
+const toDate = s => new Date(s);  // forecast times are local, e.g. "2026-10-22T16:15"
+const hourLabel = d => d.toLocaleTimeString([], {hour:'numeric'});
+const roundMins = m => m <= 7 ? 'a few mins' : m < 60 ? `${Math.round(m / 5) * 5} mins` : `${Math.round(m / 60 * 2) / 2} hr`;
+function weatherAlerts(d) {
+  const now = new Date(), out = [];
+  const q = d.minutely_15 || {}, h = d.hourly || {};
+  const slots = (q.time || []).map((t, i) => ({t: toDate(t), p: q.precipitation[i]}))
+    .filter(s => s.t >= new Date(now - 15 * 60000) && s.t <= new Date(+now + 2 * 3600000));
+  const wetNow = (d.current.precipitation || 0) >= 0.1 || (slots[0] && slots[0].p >= 0.2);
+  if (!wetNow) {
+    const s = slots.find(s => s.p >= 0.2);
+    if (s) {
+      const m = (s.t - now) / 60000;
+      out.push({icon:'rain', soon:true, text: m <= 7 ? 'Rain starting any minute' : `Rain in ~${roundMins(m)}`});
+    }
+  } else {
+    const s = slots.find(s => s.t > now && s.p < 0.1);
+    out.push({icon:'rain', soon:true, text: s ? `Rain easing off in ~${roundMins((s.t - now) / 60000)}` : 'Raining for the next couple of hours'});
+  }
+  const next = (h.time || []).map((t, i) => ({t: toDate(t), prob: h.precipitation_probability[i],
+    temp: h.temperature_2m[i], gust: h.wind_gusts_10m[i]})).filter(x => x.t > now && x.t <= new Date(+now + 12 * 3600000));
+  if (!out.length) {
+    const r = next.find(x => x.prob >= 60);
+    if (r) out.push({icon:'rain', text: `Rain likely around ${hourLabel(r.t)}`});
+  }
+  const cold = next.find(x => x.temp <= 0);
+  if (cold) out.push({icon:'snow', text: `Frost around ${hourLabel(cold.t)}`});
+  const gust = next.slice(0, 6).reduce((a, x) => x.gust > (a ? a.gust : 0) ? x : a, null);
+  if (gust && gust.gust >= 50) out.push({icon:'wind', text: `Gusts up to ${Math.round(gust.gust)} km/h`});
+  return out.slice(0, 2);
+}
+function renderAlerts() {
+  if (!wxData || !$('alerts')) return;
+  let list = [];
+  try { list = weatherAlerts(wxData); } catch (e) {}
+  $('alerts').innerHTML = list.map(a => `<div class="alert${a.soon ? ' soon' : ''}">${svg(a.icon)}${esc(a.text)}</div>`).join('');
+}
+setInterval(renderAlerts, 60000);
+function weatherMsg(text) {
+  if ($('weather') && !$('wtemp')) $('weather').innerHTML = `<div id="wdesc">${esc(text)}</div>`;
+}
+
+// Rooms, devices, buttons
+$('rooms').innerHTML = (HUB.rooms || []).map((room, r) => `<section class="room">
+  <h2>${esc(room.name)}</h2>
+  <div class="grid">${(room.devices || []).map((dev, d) => `
+    <div class="card">
+      <div class="top">
+        <div class="ico">${svg(dev.icon)}</div>
+        <div><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">Ready</div></div>
+      </div>
+      <div class="actions">${(dev.buttons || []).map((b, i) => `
+        <button class="btn" style="--c:${esc(b.color || '#cfd3dc')}" data-id="${r}-${d}-${i}">
+          ${b.icon ? svg(b.icon) : ''}${esc(b.label)}</button>`).join('')}
+      </div>
+    </div>`).join('')}
+  </div></section>`).join('');
+
+let toastTimer;
+function toast(msg) {
+  $('toast').textContent = msg; $('toast').classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3500);
+}
+
+// Called by panel.py when a button's action finishes.
+function done(id, ok, message) {
+  const btn = document.querySelector(`[data-id="${id}"]`), [r, d] = id.split('-');
+  btn.classList.remove('busy');
+  const st = $(`s-${r}-${d}`);
+  st.className = 'state ' + (ok ? 'ok' : 'err');
+  st.textContent = ok ? btn.textContent.trim() : 'Failed';
+  if (message) toast(ok ? message : 'Failed: ' + message);
+}
+
+document.querySelectorAll('#rooms .btn').forEach(btn => btn.addEventListener('click', () => {
+  btn.classList.add('busy');
+  location.href = 'panel://' + btn.dataset.id;  // panel.py catches this
+}));
+
+// ---------- Night mode ----------
+ICONS.timer = '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3"/>';
+const N = Object.assign({auto:true, start:'22:00', end:'07:00'}, HUB.night || {});
+const bgN = $('bg-night');
+let night = false;
+for (let i = 0; i < 80; i++) {
+  const st = document.createElement('i'), big = Math.random() < .15;
+  st.className = 'star';
+  st.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*75}%;--d:${2+Math.random()*4}s;`
+    + `--delay:-${Math.random()*6}s;${big ? 'width:4px;height:4px;' : ''}`;
+  bgN.appendChild(st);
+}
+
+let reveal = 0;
+function setNight(on, x, y, animate = true) {
+  if (on === night) return;
+  night = on;
+  const W = innerWidth, H = innerHeight, F = 260;   // F = how soft the edge of the circle is
+  if (x == null) { x = W / 2; y = H / 2; }
+  const R = Math.hypot(Math.max(x, W - x), Math.max(y, H - y)) + F;
+  const paint = r => {
+    const m = `radial-gradient(circle at ${x}px ${y}px, #000 ${Math.max(0, r - F)}px, transparent ${r}px)`;
+    bgN.style.webkitMaskImage = bgN.style.maskImage = m;
+  };
+  const done = () => {
+    bgN.style.webkitMaskImage = bgN.style.maskImage = '';
+    bgN.style.visibility = night ? 'visible' : 'hidden';
+  };
+  cancelAnimationFrame(reveal);
+  document.body.classList.toggle('night', on);
+  location.href = 'panel://night-' + (on ? 1 : 0);  // panel.py dims the screen
+  if (!animate) return done();
+  bgN.style.visibility = 'visible';
+  const t0 = performance.now(), dur = 2600;
+  const ease = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+  const step = now => {
+    const p = Math.min(1, (now - t0) / dur), e = ease(p);
+    paint(on ? e * R : (1 - e) * R);
+    if (p < 1) reveal = requestAnimationFrame(step); else done();
+  };
+  reveal = requestAnimationFrame(step);
+  [0, 400].forEach(delay => setTimeout(() => {
+    const r = document.createElement('div');
+    r.className = 'ripple';
+    r.style.left = x + 'px'; r.style.top = y + 'px'; r.style.setProperty('--s', R / 20);
+    document.body.appendChild(r);
+    setTimeout(() => r.remove(), 2900);
+  }, delay));
+}
+
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+function scheduledNight() {
+  const d = new Date(), n = d.getHours() * 60 + d.getMinutes(), a = toMin(N.start), b = toMin(N.end);
+  return a < b ? n >= a && n < b : n >= a || n < b;
+}
+let lastScheduled = null;
+function checkNight(first) {
+  if (!N.auto) return;
+  const s = scheduledNight();
+  if (s === lastScheduled) return;
+  lastScheduled = s;
+  const c = $('cat').getBoundingClientRect();
+  if (c.width) setNight(s, c.left + c.width / 2, c.top + c.height * .3, !first);
+  else setNight(s, null, null, !first);
+}
+checkNight(true);
+setInterval(checkNight, 30000);
+$('cat').addEventListener('click', e => setNight(!night, e.clientX, e.clientY));  // tap the cat to switch
+
+// ---------- Sound ----------
+let ac;
+function unlockAudio() {
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) {}
+}
+function tone(freq, dur, vol = .2, delay = 0) {
+  if (!ac) return;
+  if (ac.state !== 'running') ac.resume();
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + delay;
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .02);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + .05);
+}
+const tickSound = () => tone(2200, .025, .03);
+const chime = () => { tone(880, .9, .22); tone(1318.5, .9, .18, .18); tone(1760, 1.3, .15, .36); };
+
+// ---------- Timer ----------
+const TIMER_ON = (HUB.timer || {show: true}).show !== false;
+const C = 2 * Math.PI * 160, MINI = 2 * Math.PI * 42, MAX_MIN = 720;
+const dialWrap = $('dialWrap');
+let sel = 0, acc = 0, lastAng = null;              // minutes chosen, dial angle (degrees, 6 per minute)
+const T = {running: false, paused: false, total: 0, end: 0, left: 0, ringing: null};
+
+$('timerSection').hidden = !TIMER_ON;
+$('miniIcon').innerHTML = svg('timer');
+let ticks = '';
+for (let i = 0; i < 60; i++) {
+  const a = i * 6 * Math.PI / 180, big = i % 5 === 0, r1 = big ? 124 : 131, r2 = 140;
+  ticks += `<line class="tick${big ? ' big' : ''}" x1="${200 + r1 * Math.sin(a)}" y1="${200 - r1 * Math.cos(a)}"`
+         + ` x2="${200 + r2 * Math.sin(a)}" y2="${200 - r2 * Math.cos(a)}"/>`;
+}
+$('ticks').innerHTML = ticks;
+
+const fmt = sec => {
+  sec = Math.max(0, Math.ceil(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+};
+const label = min => min >= 60 ? `${Math.floor(min / 60)} hr${min % 60 ? ' ' + min % 60 + ' min' : ''}` : `${min} min`;
+const endsAt = ms => new Date(ms).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+
+function drawRing(frac, showLap) {
+  $('arc').style.strokeDashoffset = C * (1 - frac);
+  $('arc').style.opacity = frac > 0.001 ? 1 : 0;
+  $('lap').hidden = !showLap;
+  const a = frac * 2 * Math.PI;
+  $('knob').setAttribute('cx', 200 + 160 * Math.sin(a));
+  $('knob').setAttribute('cy', 200 - 160 * Math.cos(a));
+}
+function drawSet() {
+  const lapMin = sel % 60, frac = sel && !lapMin ? 1 : lapMin / 60;
+  drawRing(frac, sel > 60);
+  $('rTime').textContent = fmt(sel * 60);
+  $('rHint').textContent = sel ? label(sel) : 'Drag around the ring';
+}
+function setMinutes(m, tick = true) {
+  m = Math.max(0, Math.min(MAX_MIN, Math.round(m)));
+  if (m !== sel && tick) tickSound();
+  sel = m; drawSet();
+}
+function animateTo(target) {
+  const from = acc, to = Math.max(0, Math.min(MAX_MIN, target)) * 6, t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - t0) / 450), e = 1 - Math.pow(1 - p, 3);
+    acc = from + (to - from) * e; setMinutes(acc / 6, false);
+    if (p < 1) requestAnimationFrame(step); else tone(1500, .05, .05);
+  };
+  requestAnimationFrame(step);
+}
+
+function angleAt(e) {
+  const r = dialWrap.getBoundingClientRect(), x = e.clientX - r.left - r.width / 2, y = e.clientY - r.top - r.height / 2;
+  return (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
+}
+dialWrap.addEventListener('pointerdown', e => {
+  if (T.ringing) return stopRinging();
+  if (T.running) return;
+  unlockAudio();
+  dialWrap.setPointerCapture(e.pointerId);
+  dialWrap.classList.add('dragging');
+  const a = angleAt(e);
+  acc = Math.floor(acc / 360) * 360 + a; lastAng = a;
+  setMinutes(acc / 6);
+});
+dialWrap.addEventListener('pointermove', e => {
+  if (lastAng == null) return;
+  const a = angleAt(e);
+  let d = a - lastAng;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  acc = Math.max(0, Math.min(MAX_MIN * 6, acc + d)); lastAng = a;
+  setMinutes(acc / 6);
+});
+['pointerup', 'pointercancel'].forEach(ev => dialWrap.addEventListener(ev, () => {
+  lastAng = null; dialWrap.classList.remove('dragging');
+}));
+
+const chip = (text, fn) => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = text;
+  b.onclick = e => { e.stopPropagation(); unlockAudio(); fn(); }; return b; };
+$('chips').append(chip('−1', () => animateTo(sel - 1)),
+  ...[1, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120].map(m => chip(label(m).replace(' min', 'm').replace(' hr', 'h'), () => animateTo(m))),
+  chip('+1', () => animateTo(sel + 1)));
+$('runChips').append(chip('+1 min', () => addTime(60)), chip('+5 min', () => addTime(300)), chip('+10 min', () => addTime(600)));
+
+function openSheet() { unlockAudio(); if (!T.running) drawSet(); $('sheet').classList.add('open'); }
+function closeSheet() { $('sheet').classList.remove('open'); }
+$('timerCard').onclick = openSheet;
+$('tClose').onclick = closeSheet;
+$('sheet').addEventListener('click', e => {
+  if (T.ringing) return stopRinging();
+  if (e.target === $('sheet')) closeSheet();
+});
+
+const leftNow = () => T.paused ? T.left : (T.end - Date.now()) / 1000;
+function startTimer() {
+  if (!sel) return toast('Drag the ring or pick a time first');
+  T.total = sel * 60; T.end = Date.now() + T.total * 1000; T.running = true; T.paused = false;
+  $('sheetPanel').classList.add('running'); $('tPause').textContent = 'Pause';
+  tone(1046.5, .25, .12);
+  kick();
+}
+function addTime(sec) {
+  if (T.paused) T.left += sec; else T.end += sec * 1000;
+  T.total += sec;
+}
+function resetTimer() {
+  T.running = T.paused = false;
+  lastFrame = 0;
+  $('sheetPanel').classList.remove('running');
+  $('miniArc').style.strokeDashoffset = MINI;
+  $('tcText').textContent = 'Set a timer'; $('tcSub').textContent = 'Tap to choose any time';
+  drawSet();
+}
+$('tStart').onclick = startTimer;
+$('tCancel').onclick = resetTimer;
+$('tPause').onclick = () => {
+  if (T.paused) { T.end = Date.now() + T.left * 1000; T.paused = false; $('tPause').textContent = 'Pause'; }
+  else { T.left = leftNow(); T.paused = true; $('tPause').textContent = 'Resume'; }
+};
+
+function loop() {
+  if (!T.running) return;
+  lastFrame = performance.now();
+  const left = leftNow(), frac = Math.max(0, left / T.total);
+  if (left <= 0) return finish();
+  drawRing(frac, false);
+  $('rTime').textContent = fmt(left);
+  $('rHint').textContent = T.paused ? 'Paused' : 'Ends at ' + endsAt(T.end);
+  $('miniArc').style.strokeDashoffset = MINI * (1 - frac);
+  $('tcText').textContent = fmt(left);
+  $('tcSub').textContent = T.paused ? 'Paused' : 'Ends at ' + endsAt(T.end);
+  requestAnimationFrame(loop);
+}
+function finish() {
+  if (!T.running) return;
+  T.running = false;
+  drawRing(0, false);
+  $('sheetPanel').classList.remove('running');
+  $('sheet').classList.add('open');
+  $('rTime').textContent = "Time's up!"; $('rHint').textContent = 'Tap anywhere to stop';
+  $('tcText').textContent = "Time's up!"; $('tcSub').textContent = 'Tap to stop';
+  dialWrap.classList.add('ringing');
+  let n = 0;
+  const ring = () => {
+    chime();
+    const r = dialWrap.getBoundingClientRect(), d = document.createElement('div');
+    d.className = 'ripple'; d.style.left = r.left + r.width / 2 + 'px'; d.style.top = r.top + r.height / 2 + 'px';
+    d.style.setProperty('--s', 18); document.body.appendChild(d); setTimeout(() => d.remove(), 2000);
+    if (++n > 40) stopRinging();
+  };
+  ring(); T.ringing = setInterval(ring, 1600);
+}
+function stopRinging() {
+  clearInterval(T.ringing); T.ringing = null;
+  dialWrap.classList.remove('ringing');
+  resetTimer(); closeSheet();
+}
+let lastFrame = 0;
+// Start the countdown loop if it isn't running (it can stall when the iPad flips to Shortcuts and back).
+function kick() { if (T.running && performance.now() - lastFrame > 1000) { lastFrame = performance.now(); requestAnimationFrame(loop); } }
+document.addEventListener('visibilitychange', kick);
+setInterval(kick, 1000);
+document.addEventListener('pointerdown', unlockAudio, true);
+drawSet();
+
+// Keep the page still. #app only scrolls when the rooms don't fit, and never while the timer is open.
+const app = $('app');
+function updateScroll() {
+  app.classList.toggle('scrolls', !$('sheet').classList.contains('open') && app.scrollHeight > app.clientHeight + 1);
+}
+document.addEventListener('touchmove', e => {
+  if (!app.classList.contains('scrolls') || $('sheet').contains(e.target)) e.preventDefault();
+}, {passive: false});
+document.addEventListener('gesturestart', e => e.preventDefault());  // no pinch-zoom
+new MutationObserver(updateScroll).observe($('sheet'), {attributes: true, attributeFilter: ['class']});
+addEventListener('resize', updateScroll);
+updateScroll();
+</script>
+</body>
+</html>

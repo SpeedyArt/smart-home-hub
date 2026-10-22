@@ -1,0 +1,47 @@
+{
+  "title": "Home",
+  "show_clock": true,
+  "weather": {
+    "show": true,
+    "place": "",
+    "latitude": null,
+    "longitude": null
+  },
+  "night": {
+    "auto": true,
+    "start": "22:00",
+    "end": "07:00",
+    "brightness": 0.15
+  },
+  "timer": {
+    "show": true
+  },
+  "theme": {
+    "style": "ginger-cat"
+  },
+  "rooms": [
+    {
+      "name": "Living room",
+      "devices": [
+        {
+          "name": "TV",
+          "icon": "tv",
+          "buttons": [
+            {
+              "label": "On",
+              "icon": "power",
+              "color": "#ffb547",
+              "shortcut": "TV On"
+            },
+            {
+              "label": "Off",
+              "icon": "moon",
+              "color": "#f6d7b0",
+              "shortcut": "TV Off"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

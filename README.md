@@ -1,1 +1,78 @@
-# smart-home-hub
+# Smart Home Hub (iPad, Pythonista)
+
+Your own smart home hub. It runs in Pythonista on the iPad, with no PC needed.
+Everything you see comes from **hub.json**, so you can change it as much as you like.
+
+## Setup (one time)
+1. In Pythonista, make a folder and put **`Home.py`** in it (plus your existing `hub.json` if you have one).
+   Run `Home.py` from now on: it downloads the newest `panel.py` and `panel.html` from this repository
+   every time it opens, so updates arrive by themselves. Your `hub.json` is never overwritten,
+   so your rooms, buttons and town stay private on your iPad.
+2. **Add the TV to Apple Home:** on the TV, go to Settings > Connection > AirPlay and HomeKit > HomeKit > Set Up.
+   On the iPad, open the Home app, tap **+ > Add Accessory**, and scan the code. Check that the Home app can turn the TV on and off.
+3. **Make two Shortcuts** in the Shortcuts app. Each one uses a **Control Home** action on Living Room TV:
+   one called exactly **TV On** (turns it on) and one called **TV Off** (turns it off).
+4. Open `Home.py` in Pythonista and tap ▶.
+
+Home Screen icon: in Pythonista open `Home.py`, tap the wrench > **Shortcuts… > Home Screen**.
+Keep it on: Settings > Display & Brightness > Auto-Lock > **Never**, and leave the iPad charging.
+
+## Customising (hub.json)
+Open `hub.json` in Pythonista (or add a button with `"edit": true` to open it from the hub). Save it and run `Home.py` again.
+
+```
+rooms -> devices -> buttons
+```
+
+**Room:** `{ "name": "Bedroom", "devices": [ ... ] }`
+
+**Device:** `{ "name": "Lamp", "icon": "light", "buttons": [ ... ] }`
+
+**Button:** a `label`, an optional `icon` and `color`, and one of these:
+| key | what it does | example |
+|---|---|---|
+| `"shortcut"` | runs an Apple Shortcut by name (use this for anything in the Home app) | `"shortcut": "Lamp On"` |
+| `"url"` | opens an app or link | `"url": "spotify://"` |
+| `"edit": true` | opens hub.json for editing | |
+
+**Icons:** tv, power, moon, light, plug, fan, speaker, music, lock, thermostat, blinds,
+camera, home, star, play, bed, sun, edit
+
+**Colours:** any colour code, e.g. `"#ffb547"`. Pick one from a site like htmlcolorcodes.com.
+
+**Weather:** shown top right, refreshed every 15 minutes (free Open-Meteo service).
+The hub uses the iPad's location, so tap **Allow** when Pythonista asks the first time.
+If that doesn't work, type your town under `weather`, e.g. `"place": "Manchester"`, and it looks it up.
+If the weather can't load, a short message there says why.
+Heads-ups appear under the weather when they matter: "Rain in ~20 mins", "Rain easing off in ~30 mins",
+"Rain likely around 6 PM", frost overnight, and strong gusts. Set `"show": false` to hide it.
+
+**Night mode:** tap the moon button at the top to switch, or let it switch by itself.
+Under `night`: `"auto": true` uses the `"start"` / `"end"` times (24-hour, e.g. "22:00"), and `"brightness"`
+(0 to 1) dims the iPad screen at night. Remove `brightness` to leave the screen alone.
+
+**Timer:** tap the Timer card. Drag around the ring (each full turn is an hour, up to 12 hours),
+or tap a quick time. While it runs you can add time, pause or cancel. Set `"timer": {"show": false}` to hide it.
+Keep the iPad's volume up to hear the chime.
+
+**Theme:** `"style": "ginger-cat"` gives the ginger cat theme. Remove it for the original purple look.
+`theme.background` is the two background gradient colours, `theme.glow` is the two soft glows,
+and `theme.text` is the text colour. Set `"show_clock": false` to replace the clock with the title.
+
+### Example: add a bedroom lamp
+1. Add the lamp to the Home app, then make Shortcuts called "Lamp On" and "Lamp Off".
+2. Add this to `rooms` in hub.json (watch the commas between entries):
+```json
+{
+  "name": "Bedroom",
+  "devices": [
+    { "name": "Lamp", "icon": "light", "buttons": [
+      { "label": "On",  "icon": "sun",  "color": "#ffd166", "shortcut": "Lamp On" },
+      { "label": "Off", "icon": "moon", "color": "#7c8cff", "shortcut": "Lamp Off" }
+    ]}
+  ]
+}
+```
+A **scene** works the same way: one Shortcut that does several things (e.g. "Movie night": TV on, lights dim).
+
+If hub.json has a typo, the hub tells you and opens the file so you can fix it.
