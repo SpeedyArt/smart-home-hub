@@ -24,6 +24,18 @@
       "name": "Living room",
       "devices": [
         {
+          "name": "Movie night",
+          "icon": "play",
+          "buttons": [
+            {
+              "label": "Movie night",
+              "icon": "play",
+              "color": "#ff8a5c",
+              "shortcut": "Movie Night"
+            }
+          ]
+        },
+        {
           "name": "TV",
           "icon": "tv",
           "buttons": [
