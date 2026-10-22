@@ -244,12 +244,40 @@
            filter:blur(3px); animation:steam 3.2s ease-in infinite; opacity:0; }
   @keyframes steam { 0% { opacity:0; transform:translateY(8px) scaleY(.6); } 40% { opacity:.8; } 100% { opacity:0; transform:translateY(-28px) translateX(6px) scaleY(1.2); } }
   body.night .steam { display:none; }
+
+  /* Seasonal room: pumpkins at Halloween, snow on the sill in winter, fairy lights in December */
+  .season { display:none; pointer-events:none; }
+  body.s-halloween .s-halloween, body.s-snow .s-snow, body.s-lights .s-lights { display:block; }
+  .pumpkin { position:fixed; bottom:calc(var(--sill) - 4px); z-index:1; transition:filter 2.4s; }
+  .pumpkin .face { fill:#ffd36b; animation:flicker 2.6s ease-in-out infinite; }
+  .pumpkin svg { display:block; width:100%; height:auto; stroke:none; overflow:visible; }
+  body.night .pumpkin { filter:brightness(.7) saturate(.9); }
+  body.night .pumpkin .face { fill:#ffe08a; filter:drop-shadow(0 0 6px #ffb02e) drop-shadow(0 0 14px #ff8a00); }
+  @keyframes flicker { 0%,100% { opacity:1; } 40% { opacity:.82; } 55% { opacity:.95; } 70% { opacity:.78; } }
+  .bat { position:absolute; width:12%; z-index:4; animation:batfly 14s linear infinite; }
+  .bat svg { fill:#2a1d33; stroke:none; } body.night .bat svg { fill:#0c0814; }
+  .bat svg { width:100%; height:auto; display:block; animation:flap .35s ease-in-out infinite alternate; transform-origin:50% 40%; }
+  @keyframes batfly { 0% { transform:translate(-160%,40%); } 50% { transform:translate(380%,-30%); } 100% { transform:translate(900%,30%); } }
+  @keyframes flap { to { transform:scaleY(.45); } }
+  #snowSill { position:fixed; left:0; right:0; bottom:calc(var(--sill) - 2px); height:26px; z-index:0; }
+  #snowSill svg, .snowpile svg { width:100%; height:100%; stroke:none; display:block; }
+  .snowpile { position:absolute; bottom:0; height:12%; width:45%; z-index:4; }
+  .snowpile.l { left:-2%; } .snowpile.r { right:-2%; transform:scaleX(-1); }
+  body.night #snowSill, body.night .snowpile { filter:brightness(.62) saturate(.7) hue-rotate(10deg); }
+  .lights { position:absolute; z-index:7; }
+  .lights svg { width:100%; height:100%; stroke-width:0; display:block; overflow:visible; }
+  .lights .bulb { animation:twinkleb 2.4s ease-in-out infinite; }
+  body.night .lights .bulb { filter:drop-shadow(0 0 5px currentColor) drop-shadow(0 0 10px currentColor); }
+  @keyframes twinkleb { 0%,100% { opacity:1; } 50% { opacity:.45; } }
+  #lightsWin { left:-14%; right:-14%; top:-26px; height:60px; }
+  #lightsSill { position:fixed; left:0; right:0; bottom:calc(var(--sill) - 30px); height:40px; z-index:0; }
   @media (orientation:portrait) {
     :root { --ww:38vw; --clk:11vw; }
     #windowWrap { top:max(4vh,env(safe-area-inset-top)); }
     .bubble { width:min(400px,52vw); }
     #catWrap { left:30vw; width:min(40vw,320px); }
     #mug { left:calc(30vw + min(40vw,320px) + 4vw); }
+    #pumpkin1 { left:6vw !important; } #pumpkin2 { left:19vw !important; }
   }
   @media (max-width:700px) { #clock { font-size:64px; } }
 </style>
@@ -321,6 +349,11 @@
 <span class="zzz" style="left:-10%;top:16%;animation-delay:3s;font-size:42px">Z</span>
 </div>
 <div id="mug"><i class="steam" style="left:14px"></i><i class="steam" style="left:28px;animation-delay:1s"></i><i class="steam" style="left:42px;animation-delay:2s"></i></div>
+<div id="pumpkin1" class="season s-halloween pumpkin" style="left:24vw;width:min(11vw,120px)"></div>
+<div id="pumpkin2" class="season s-halloween pumpkin" style="left:35vw;width:min(7vw,76px)"></div>
+<div id="pumpkin3" class="season s-halloween pumpkin" style="left:calc(43vw + min(25vw,290px) + 3vw + 110px);width:min(8vw,88px)"></div>
+<div id="snowSill" class="season s-snow"></div>
+<div id="lightsSill" class="season s-lights lights"></div>
 <div id="app">
 <header id="header"></header>
 <div id="windowWrap">
@@ -328,8 +361,11 @@
     <div class="sky day"></div><div class="sky night" id="nightSky"></div>
     <div id="sun"></div><div id="moon"></div>
     <div id="clouds"></div><div id="precip"></div><div id="fog"></div><div id="flash"></div>
+    <div class="season s-halloween bat" style="top:22%;animation-delay:-3s"></div><div class="season s-halloween bat" style="top:38%;width:8%;animation-delay:-10s;animation-duration:17s"></div>
+    <div class="season s-snow snowpile l"></div><div class="season s-snow snowpile r"></div>
     <div class="bar v"></div><div class="bar h"></div>
   </div>
+  <div id="lightsWin" class="season s-lights lights"></div>
   <div class="curtain l"></div><div class="curtain r"></div>
 </div>
 <div id="controls">
@@ -796,6 +832,62 @@ document.addEventListener('visibilitychange', kick);
 setInterval(kick, 1000);
 document.addEventListener('pointerdown', unlockAudio, true);
 drawSet();
+
+// Seasonal room, picked by date: pumpkins and bats for Halloween, snow on the sill in winter, fairy lights in December.
+// hub.json "season" can force one ("halloween", "winter", "christmas") or turn it "off".
+const PUMPKIN = `<svg viewBox="0 0 100 86">
+  <path d="M50 14c-2-7 1-12 7-14l3 4c-4 2-5 5-4 10z" fill="#5b7a2e"/>
+  <ellipse cx="30" cy="52" rx="26" ry="32" fill="#e8721c"/><ellipse cx="70" cy="52" rx="26" ry="32" fill="#e8721c"/>
+  <ellipse cx="50" cy="52" rx="22" ry="34" fill="#f58a2a"/>
+  <path d="M30 22c-6 10-6 50 0 60M70 22c6 10 6 50 0 60" stroke="#c75a12" stroke-width="2.5" fill="none"/>
+  <path class="face" d="M28 40l10-8 6 12zM72 40l-10-8-6 12zM46 52l4-7 4 7zM24 60q26 18 52 0l-6 2-4 6-6-5-5 7-5-7-6 5-4-6z"/></svg>`;
+const BAT = '<svg viewBox="0 0 60 30"><path d="M30 10c-2-4-4-4-5 0-6-6-16-8-25-3 6 1 9 5 9 9 3-3 7-3 9 1 2-3 5-4 7-1l5 5 5-5c2-3 5-2 7 1 2-4 6-4 9-1 0-4 3-8 9-9-9-5-19-3-25 3-1-4-3-4-5 0z"/></svg>';
+// A wavy white drift, n bumps wide.
+const drift = n => {
+  let d = 'M0 30V14', w = 100 / n;
+  for (let i = 0; i < n; i++) d += `Q${(i + .5) * w} ${i % 2 ? 2 : 6} ${(i + 1) * w} ${12 + (i * 7) % 5}`;
+  return `<svg viewBox="0 0 100 30" preserveAspectRatio="none"><path d="${d}V30z" fill="#f4f8ff"/></svg>`;
+};
+// A string of fairy lights hanging in `swags` loops.
+function garland(swags, bulbsPer, sag) {
+  const cols = ['#ff5a5a', '#ffd24a', '#5ad1ff', '#7cff8a', '#ff8ae0'];
+  let wire = 'M0 4', bulbs = '', k = 0;
+  for (let i = 0; i < swags; i++) {
+    const x0 = i * 1000 / swags, x1 = (i + 1) * 1000 / swags, cx = (x0 + x1) / 2;
+    wire += `Q${cx} ${sag * 2} ${x1} 4`;
+    for (let j = 1; j <= bulbsPer; j++) {
+      const t = j / (bulbsPer + 1), x = (1 - t) ** 2 * x0 + 2 * t * (1 - t) * cx + t * t * x1, y = 4 + 2 * t * (1 - t) * (sag * 2 - 4);
+      const c = cols[k % cols.length];
+      bulbs += `<g class="bulb" style="color:${c};animation-delay:-${(k * .37) % 2.4}s"><rect x="${x - 3}" y="${y - 2}" width="6" height="5" fill="#3b3b3b"/>`
+        + `<ellipse cx="${x}" cy="${y + 9}" rx="6" ry="9" fill="${c}"/></g>`;
+      k++;
+    }
+  }
+  return `<svg viewBox="0 0 1000 ${sag + 30}" preserveAspectRatio="none"><path d="${wire}" stroke="#2f4a2a" stroke-width="2.5" fill="none"/>${bulbs}</svg>`;
+}
+function seasonNow(d = new Date()) {
+  const forced = new URLSearchParams(location.search).get('season') || HUB.season;
+  if (forced === 'off') return [];
+  if (forced && forced !== 'auto') return {halloween: ['halloween'], winter: ['snow'], christmas: ['snow', 'lights']}[forced] || [];
+  const m = d.getMonth() + 1, day = d.getDate(), on = [];
+  if ((m === 10 && day >= 13) || (m === 11 && day === 1)) on.push('halloween');
+  if (m === 12 || m <= 2) on.push('snow');
+  if (m === 12 || (m === 1 && day <= 6)) on.push('lights');
+  return on;
+}
+(function buildSeason() {
+  for (const id of ['pumpkin1', 'pumpkin2', 'pumpkin3']) $(id).innerHTML = PUMPKIN;
+  document.querySelectorAll('.bat').forEach(b => b.innerHTML = BAT);
+  $('snowSill').innerHTML = drift(18);
+  document.querySelectorAll('.snowpile').forEach(p => p.innerHTML = drift(3));
+  $('lightsWin').innerHTML = garland(3, 5, 22);
+  $('lightsSill').innerHTML = garland(6, 6, 14);
+  const apply = () => {
+    const on = seasonNow();
+    for (const s of ['halloween', 'snow', 'lights']) document.body.classList.toggle('s-' + s, on.includes(s));
+  };
+  apply(); setInterval(apply, 3600 * 1000);
+})();
 
 // Keep the page still. #app only scrolls when the rooms don't fit, and never while the timer is open.
 const app = $('app');
