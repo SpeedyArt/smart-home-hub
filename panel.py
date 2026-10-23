@@ -206,7 +206,7 @@ def weather_loop():
             lat, lon, place = weather_place(w)
             url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
                    "&current=temperature_2m,weather_code,precipitation"
-                   "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                   "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset"
                    "&minutely_15=precipitation"
                    "&hourly=precipitation_probability,temperature_2m,wind_gusts_10m"
                    "&timezone=auto&forecast_days=2")
