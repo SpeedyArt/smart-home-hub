@@ -31,7 +31,8 @@
           "icon": "tv",
           "toggle": {
             "on": {
-              "shortcut": "TV On"
+              "shortcut": "TV On",
+              "wake": true
             },
             "off": {
               "shortcut": "TV Off"

@@ -3,6 +3,7 @@ edit that file to add rooms, devices, buttons, icons and colours, then run this 
 import base64
 import json
 import os
+import re
 import socket
 import threading
 import time
@@ -43,9 +44,12 @@ def load_hub():
 
 def run_button(button):
     """Do what a hub.json button asks. Returns (ok, message)."""
+    if button.get("wake"):  # wake the TV straight over Wi-Fi too, in case Apple Home has lost it
+        wake_tv()
     if "shortcut" in button:  # an Apple Shortcut, e.g. one that controls HomeKit devices
+        back = quote("pythonista3://")  # come back to the hub even if the Shortcut fails
         webbrowser.open("shortcuts://x-callback-url/run-shortcut?name=" + quote(button["shortcut"])
-                        + "&x-success=" + quote("pythonista3://"))
+                        + "&x-success=" + back + "&x-error=" + back + "&x-cancel=" + back)
         return True, ""
     if "url" in button:  # open any app or link
         webbrowser.open(button["url"])
@@ -327,14 +331,58 @@ def find_tv():
     return None
 
 
-def remember_tv(ip):
+def remember_tv(key, value):
     mine = {}
     if os.path.exists(PRIVATE_FILE):
         with open(PRIVATE_FILE, encoding="utf-8") as f:
             mine = json.load(f)
-    mine.setdefault("tv", {})["ip"] = ip
+    mine.setdefault("tv", {})[key] = value
     with open(PRIVATE_FILE, "w", encoding="utf-8") as f:
         json.dump(mine, f, indent=2)
+
+
+def wake_tv():
+    """Wake-on-LAN: a "magic packet" the TV's Wi-Fi listens for even in its deepest sleep,
+    when Apple Home says it's not reachable. Needs the TV's MAC address, asked for once."""
+    tv = HUB.setdefault("tv", {})
+    mac = re.sub(r"[^0-9a-fA-F]", "", tv.get("mac") or "")
+    if len(mac) != 12:
+        try:
+            typed = console.input_alert("Wake the TV over Wi-Fi",
+                                        "Paste the TV's MAC address (once only, it stays on this iPad)", "", "Save")
+        except KeyboardInterrupt:  # Cancel
+            return
+        mac = re.sub(r"[^0-9a-fA-F]", "", typed)
+        if len(mac) != 12:
+            return
+        tv["mac"] = ":".join(mac[i:i + 2] for i in range(0, 12, 2)).upper()
+        try:
+            remember_tv("mac", tv["mac"])
+        except Exception:
+            pass
+    packet = b"\xff" * 6 + bytes.fromhex(mac) * 16
+    targets = [tv["ip"]] if tv.get("ip") else []  # straight to the TV: iPadOS often blocks broadcasts
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("1.1.1.1", 80))
+        targets += [s.getsockname()[0].rsplit(".", 1)[0] + ".255", "255.255.255.255"]
+        s.close()
+    except OSError:
+        pass
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    except OSError:
+        pass
+    for _ in range(3):  # a sleeping TV sometimes misses the first one
+        for target in targets:
+            for port in (9, 7):
+                try:
+                    s.sendto(packet, (target, port))
+                except OSError:
+                    pass
+        time.sleep(0.2)
+    s.close()
 
 
 def status_loop():
@@ -359,7 +407,7 @@ def status_loop():
                 if found != tv.get("ip"):
                     tv["ip"] = found
                     try:
-                        remember_tv(found)
+                        remember_tv("ip", found)
                     except Exception:
                         pass
         state = on if (on or tv.get("ip")) else None  # never seen it on: we can't tell yet
