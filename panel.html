@@ -823,7 +823,7 @@ function toast(msg) {
 }
 
 // Switch devices: what we know about each one ("on", "off" or unknown) and what we're waiting for.
-const devState = {}, devWant = {};
+const devState = {}, devWant = {}, lastSeen = {}, tapped = {};
 function showDevice(id) {
   const el = $('dev-' + id), st = $('s-' + id), want = devWant[id], on = want ? want.to === 'on' : devState[id] === 'on';
   el.classList.toggle('on', on);
@@ -834,22 +834,23 @@ function showDevice(id) {
     : devState[id] === 'on' ? 'On' : devState[id] === 'off' ? 'Off' : 'Tap to turn on';
 }
 // Called by panel.py with the device's live state: true (on), false (off) or null (can't tell).
+// After a tap we keep what was tapped, and only follow the live state once it changes. Some TVs stay
+// reachable in standby, so an unchanged reading right after "off" doesn't mean it's still on.
 function setDeviceState(id, on) {
   if (!$('dev-' + id) || on == null) return;
-  devState[id] = on ? 'on' : 'off';
-  const want = devWant[id];
-  if (want && devState[id] === want.to) delete devWant[id];
-  else if (want && Date.now() > want.until) {
-    delete devWant[id];
-    if (want.to === 'on') toast("The TV didn't wake up. It's probably in deep sleep: turn on Wake on Wireless Network in the TV's settings.");
-  }
+  const seen = on ? 'on' : 'off', changed = lastSeen[id] !== seen;
+  lastSeen[id] = seen;
+  if (tapped[id] && !changed) return;
+  delete tapped[id];
+  devState[id] = seen;
+  if (devWant[id] && devWant[id].to === seen) { clearTimeout(devWant[id].timer); delete devWant[id]; }
   showDevice(id);
 }
 document.querySelectorAll('#rooms .bubble.toggle').forEach(el => el.addEventListener('click', () => {
-  const id = el.dataset.id;
-  if (devWant[id]) return;
-  const to = el.classList.contains('on') ? 'off' : 'on';
-  devWant[id] = {to, until: Date.now() + 45000};  // the TV can take a while to wake up
+  const id = el.dataset.id, to = el.classList.contains('on') ? 'off' : 'on';
+  if (devWant[id]) clearTimeout(devWant[id].timer);
+  devWant[id] = {to, timer: setTimeout(() => { delete devWant[id]; showDevice(id); }, 5000)};
+  devState[id] = to; tapped[id] = true;  // trust the tap until the live state changes
   showDevice(id);
   location.href = `panel://${id}-${to}`;  // panel.py runs the Shortcut
 }));
@@ -859,9 +860,11 @@ function done(id, ok, message) {
   const [r, d, b] = id.split('-');
   if (b === 'on' || b === 'off') {
     const key = `${r}-${d}`;
-    if (!ok) { delete devWant[key]; showDevice(key); toast('Failed: ' + message); return; }
-    devState[key] = b;  // trust it until the live status says otherwise
-    setTimeout(() => { if (devWant[key]) { delete devWant[key]; showDevice(key); } }, 45000);
+    if (!ok) {
+      if (devWant[key]) clearTimeout(devWant[key].timer);
+      delete devWant[key]; delete tapped[key]; devState[key] = lastSeen[key];
+      showDevice(key); toast('Failed: ' + message);
+    }
     return;
   }
   const btn = document.querySelector(`[data-id="${id}"]`);
