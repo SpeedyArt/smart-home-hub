@@ -45,6 +45,8 @@ Heads-ups appear under the weather when they matter: "Rain in ~20 mins", "Rain e
 "Rain likely around 6 PM", frost overnight, and strong gusts. Set `"show": false` to hide it.
 
 **Night mode:** tap the cat to switch (it falls asleep), or let it switch by itself.
+
+**Cat moods:** by day the cat now and then naps, stretches with a yawn, chases a fly, or watches a robin land in the window.
 Under `night`: `"auto": true` uses the `"start"` / `"end"` times (24-hour, e.g. "22:00"), and `"brightness"`
 (0 to 1) dims the iPad screen at night. Remove `brightness` to leave the screen alone.
 

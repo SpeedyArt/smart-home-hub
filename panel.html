@@ -271,6 +271,45 @@
   @keyframes twinkleb { 0%,100% { opacity:1; } 50% { opacity:.45; } }
   #lightsWin { left:-14%; right:-14%; top:-26px; height:60px; }
   #lightsSill { position:fixed; left:0; right:0; bottom:calc(var(--sill) - 30px); height:40px; z-index:0; }
+  /* Cat moods (by day): naps, stretches, chases a fly, watches a robin in the window */
+  body:not(.ginger-cat) #fly, body:not(.ginger-cat) #robin { display:none !important; }
+  body.m-nap:not(.night) #eyesOpen { opacity:0; } body.m-nap:not(.night) #eyesShut { opacity:1; }
+  body.m-nap:not(.night) .zzz { animation:zzz 4.5s ease-in-out infinite; }
+  body.m-nap:not(.night) #tail { animation-play-state:paused; }
+  body.m-nap:not(.night) #cat { transform-origin:50% 100%; animation:breathe 3.6s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform:scale(1.012,1.022); } }
+  #yawn { opacity:0; transform-box:fill-box; transform-origin:50% 0; }
+  body.m-stretch:not(.night) #cat { transform-origin:50% 100%; animation:stretch 12s ease-in-out both; }
+  body.m-stretch:not(.night) #eyesOpen { animation:stretchOpen 12s both; }
+  body.m-stretch:not(.night) #eyesShut { animation:stretchShut 12s both; }
+  body.m-stretch:not(.night) #yawn { animation:yawn 12s ease-in-out both; }
+  body.m-stretch:not(.night) #tail { animation:tailUp 12s ease-in-out both; }
+  @keyframes stretch { 0%,10%,85%,100% { transform:none; } 30%,65% { transform:scale(.93,1.1); } }
+  @keyframes stretchOpen { 0%,16%,72%,100% { opacity:1; } 22%,66% { opacity:0; } }
+  @keyframes stretchShut { 0%,16%,72%,100% { opacity:0; } 22%,66% { opacity:1; } }
+  @keyframes yawn { 0%,25%,62%,100% { opacity:0; transform:scaleY(.1); } 35%,52% { opacity:1; transform:scaleY(1); } }
+  @keyframes tailUp { 0%,12%,85%,100% { transform:rotate(0); } 30%,65% { transform:rotate(-14deg); } }
+  #fly { position:absolute; width:9%; z-index:3; display:none; pointer-events:none; }
+  #fly svg { width:100%; height:auto; display:block; stroke:none; overflow:visible; animation:buzz .12s linear infinite alternate; }
+  #fly .wing { animation:flutter .05s linear infinite alternate; transform-box:fill-box; transform-origin:50% 100%; }
+  body.m-fly:not(.night) #fly { display:block; animation:flyLoop 4s ease-in-out infinite; }
+  body.m-fly:not(.night) .pupil { animation:followFly 4s ease-in-out infinite; }
+  body.m-fly:not(.night) #cat { transform-origin:50% 100%; animation:headBob 4s ease-in-out infinite; }
+  body.m-fly:not(.night) #tail { animation-duration:1.4s; }
+  @keyframes flyLoop { 0%,100% { left:12%; top:6%; } 25% { left:62%; top:-10%; } 50% { left:84%; top:14%; } 75% { left:38%; top:-14%; } }
+  @keyframes followFly { 0%,100% { transform:translate(-7px,-3px); } 25% { transform:translate(4px,-8px); } 50% { transform:translate(8px,-2px); } 75% { transform:translate(0,-9px); } }
+  @keyframes headBob { 0%,100% { transform:rotate(-2deg); } 25% { transform:rotate(1deg); } 50% { transform:rotate(2.5deg); } 75% { transform:rotate(0); } }
+  @keyframes buzz { to { transform:translate(2px,-2px); } }
+  @keyframes flutter { to { transform:scaleY(.4); } }
+  #robin { position:absolute; left:62%; bottom:44%; width:15%; z-index:6; display:none; pointer-events:none; }
+  #robin svg { width:100%; height:auto; display:block; stroke:none; transform:scaleX(-1); }
+  #robin .bob { transform-box:fill-box; transform-origin:50% 100%; animation:peck 2.6s ease-in-out infinite; }
+  body.m-birds:not(.night) #robin { display:block; animation:robin 30s ease-in-out both; }
+  body.m-birds:not(.night) .pupil { transform:translate(9px,-8px); transition:transform .6s; }
+  body.m-birds:not(.night) #tail { animation-duration:1.2s; }
+  @keyframes robin { 0% { transform:translate(420%,-260%); } 8%,30% { transform:translate(0,0); } 32% { transform:translate(-30%,-30%); }
+                     34%,62% { transform:translate(-60%,0); } 64% { transform:translate(-30%,-30%); } 66%,90% { transform:translate(0,0); } 100% { transform:translate(-520%,-300%); } }
+  @keyframes peck { 0%,60%,100% { transform:none; } 70%,80% { transform:rotate(-18deg); } }
   @media (orientation:portrait) {
     :root { --ww:38vw; --clk:11vw; }
     #windowWrap { top:max(4vh,env(safe-area-inset-top)); }
@@ -340,6 +379,7 @@
   <!-- nose, mouth, whiskers -->
   <path d="M189 176 Q200 170 211 176 Q207 187 200 190 Q193 187 189 176 Z" fill="#e8707e"/>
   <path d="M200 190 v6 M200 196 q-6 9 -16 6 M200 196 q6 9 16 6" stroke="#3a1d0e" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <ellipse id="yawn" cx="200" cy="208" rx="12" ry="14" fill="#7a2730"/>
   <g fill="#c9915f" opacity=".6"><circle cx="176" cy="196" r="2"/><circle cx="168" cy="190" r="2"/><circle cx="224" cy="196" r="2"/><circle cx="232" cy="190" r="2"/></g>
   <path d="M164 196 C132 186 108 186 84 192 M164 204 C132 202 110 206 88 216 M236 196 C268 186 292 186 316 192 M236 204 C268 202 290 206 312 216" stroke="#fff7ec" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".85"/>
   <ellipse cx="132" cy="190" rx="14" ry="8" fill="#ff8f86" opacity=".35"/><ellipse cx="268" cy="190" rx="14" ry="8" fill="#ff8f86" opacity=".35"/>
@@ -347,6 +387,7 @@
 <span class="zzz" style="left:6%;top:18%">z</span>
 <span class="zzz" style="left:-2%;top:12%;animation-delay:1.5s;font-size:26px">z</span>
 <span class="zzz" style="left:-10%;top:16%;animation-delay:3s;font-size:42px">Z</span>
+<div id="fly"><svg viewBox="0 0 20 16"><ellipse class="wing" cx="7" cy="5" rx="4" ry="5" fill="#dfefff" opacity=".75"/><ellipse class="wing" cx="13" cy="5" rx="4" ry="5" fill="#dfefff" opacity=".75"/><ellipse cx="10" cy="10" rx="5" ry="4" fill="#222"/></svg></div>
 </div>
 <div id="mug"><i class="steam" style="left:14px"></i><i class="steam" style="left:28px;animation-delay:1s"></i><i class="steam" style="left:42px;animation-delay:2s"></i></div>
 <div id="pumpkin1" class="season s-halloween pumpkin" style="left:24vw;width:min(11vw,120px)"></div>
@@ -363,6 +404,11 @@
     <div id="clouds"></div><div id="precip"></div><div id="fog"></div><div id="flash"></div>
     <div class="season s-halloween bat" style="top:22%;animation-delay:-3s"></div><div class="season s-halloween bat" style="top:38%;width:8%;animation-delay:-10s;animation-duration:17s"></div>
     <div class="season s-snow snowpile l"></div><div class="season s-snow snowpile r"></div>
+    <div id="robin"><svg viewBox="0 0 40 34"><g class="bob">
+      <path d="M8 16 L0 11 L3 21 Z" fill="#5e412b"/><ellipse cx="18" cy="18" rx="13" ry="10" fill="#7a5638"/>
+      <circle cx="28" cy="10" r="7.5" fill="#7a5638"/><ellipse cx="26" cy="18" rx="8" ry="7.5" fill="#f0743a"/>
+      <circle cx="30.5" cy="8.5" r="1.5" fill="#111"/><path d="M35 9.5 l5 1.5 -5 1.5 z" fill="#3a2a1a"/></g>
+      <path d="M16 27 v6 M21 27 v6" stroke="#3a2a1a" stroke-width="1.6"/></svg></div>
     <div class="bar v"></div><div class="bar h"></div>
   </div>
   <div id="lightsWin" class="season s-lights lights"></div>
@@ -832,6 +878,29 @@ document.addEventListener('visibilitychange', kick);
 setInterval(kick, 1000);
 document.addEventListener('pointerdown', unlockAudio, true);
 drawSet();
+
+// ---------- Cat moods ----------
+// By day the cat sits for a while, then naps, stretches, chases a fly or watches a robin in the window.
+// Afternoons are sleepier. At night it just sleeps. ?mood=nap|stretch|fly|birds shows one and keeps it.
+const MOODS = {nap: 90, stretch: 12, fly: 25, birds: 30};  // seconds each one lasts
+let mood = '', moodTimer = 0;
+function setMood(m) {
+  if (mood) document.body.classList.remove('m-' + mood);
+  mood = m;
+  if (m) document.body.classList.add('m-' + m);
+}
+(function nextMood() {
+  clearTimeout(moodTimer);
+  const forced = new URLSearchParams(location.search).get('mood');
+  if (forced in MOODS) return setMood(forced);
+  const sit = (60 + Math.random() * 120) * 1000;
+  if (mood || night) { setMood(''); moodTimer = setTimeout(nextMood, sit); return; }
+  const h = new Date().getHours(), pool = ['stretch', 'fly', 'birds', 'birds', 'nap'];
+  if (h >= 12 && h < 17) pool.push('nap', 'nap');
+  const m = pool[Math.random() * pool.length | 0];
+  setMood(m);
+  moodTimer = setTimeout(nextMood, MOODS[m] * 1000);
+})();
 
 // Seasonal room, picked by date: pumpkins and bats for Halloween, snow on the sill in winter, fairy lights in December.
 // hub.json "season" can force one ("halloween", "winter", "christmas") or turn it "off".
