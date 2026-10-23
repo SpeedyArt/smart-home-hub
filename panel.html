@@ -838,7 +838,11 @@ function setDeviceState(id, on) {
   if (!$('dev-' + id) || on == null) return;
   devState[id] = on ? 'on' : 'off';
   const want = devWant[id];
-  if (want && (devState[id] === want.to || Date.now() > want.until)) delete devWant[id];
+  if (want && devState[id] === want.to) delete devWant[id];
+  else if (want && Date.now() > want.until) {
+    delete devWant[id];
+    if (want.to === 'on') toast("The TV didn't wake up. It's probably in deep sleep: turn on Wake on Wireless Network in the TV's settings.");
+  }
   showDevice(id);
 }
 document.querySelectorAll('#rooms .bubble.toggle').forEach(el => el.addEventListener('click', () => {
