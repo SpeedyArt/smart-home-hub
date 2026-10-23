@@ -50,6 +50,8 @@ Heads-ups appear under the weather when they matter: "Rain in ~20 mins", "Rain e
 Under `night`: `"auto": true` uses the `"start"` / `"end"` times (24-hour, e.g. "22:00"), and `"brightness"`
 (0 to 1) dims the iPad screen at night. Remove `brightness` to leave the screen alone.
 
+**Hamster:** a ginger hamster lives at the left of the sill. By day he peeks out of his cardboard tube, sniffs and nibbles seeds. At night he runs on his wheel. Tap him for a squeak and a heart.
+
 **Timer:** tap the Timer bubble. Drag around the ring (each full turn is an hour, up to 12 hours),
 or tap a quick time. While it runs you can add time, pause or cancel. Set `"timer": {"show": false}` to hide it.
 Keep the iPad's volume up to hear the chime.

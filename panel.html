@@ -315,13 +315,49 @@
   @keyframes robin { 0% { transform:translate(420%,-260%); } 8%,30% { transform:translate(0,0); } 32% { transform:translate(-30%,-30%); }
                      34%,62% { transform:translate(-60%,0); } 64% { transform:translate(-30%,-30%); } 66%,90% { transform:translate(0,0); } 100% { transform:translate(-520%,-300%); } }
   @keyframes peck { 0%,60%,100% { transform:none; } 70%,80% { transform:rotate(-18deg); } }
+  /* Ginger hamster: peeks out of his tube by day, runs on his wheel at night. Tap him for a squeak. */
+  #hamWrap { position:fixed; left:1.5vw; bottom:calc(var(--sill) - 6px); width:min(23vw,270px); z-index:1; cursor:pointer;
+             -webkit-tap-highlight-color:transparent; }
+  body:not(.ginger-cat) #hamWrap { display:none; }
+  #hamster { display:block; width:100%; height:auto; overflow:visible; stroke:none; transition:filter 2.4s; }
+  body.night #hamster { filter:brightness(.66) saturate(.85); }
+  #hRungs, #hRunner .bob, #hRunner .leg, #hHead, #hEyes, #hNose, #hEarL, #hEarR, .hCheek, #hSeed, #hPaws { transform-box:fill-box; }
+  #hRunner, #hSeed { opacity:0; }
+  body.night #hPeek { opacity:0; } body.night #hRunner { opacity:1; }
+  #hRungs { transform-origin:center; }
+  body.night #hRungs { animation:hSpin 1.1s linear infinite; }
+  body.night #hRunner .bob { animation:hBob .28s ease-in-out infinite alternate; }
+  body.night #hRunner .leg { animation:hLeg .28s ease-in-out infinite alternate; transform-origin:50% 0; }
+  body.night #hRunner .leg.b { animation-direction:alternate-reverse; }
+  #hamWrap.paused #hRungs, #hamWrap.paused #hRunner .bob, #hamWrap.paused #hRunner .leg { animation-play-state:paused; }
+  @keyframes hSpin { to { transform:rotate(360deg); } }
+  @keyframes hBob { to { transform:translateY(-3px); } }
+  @keyframes hLeg { from { transform:rotate(-35deg); } to { transform:rotate(35deg); } }
+  #hHead { transform-origin:50% 100%; }
+  #hEyes { transform-origin:center; animation:blink 5.5s infinite; }
+  #hNose { transform-origin:center; animation:hSniff 2.4s ease-in-out infinite; }
+  @keyframes hSniff { 0%,60%,100% { transform:none; } 66%,78% { transform:translateY(-1.5px) scale(1.12); } 72% { transform:scale(.92); } }
+  #hEarL { transform-origin:80% 90%; animation:hEar 7s ease-in-out infinite; }
+  #hEarR { transform-origin:20% 90%; animation:hEar 7s ease-in-out infinite reverse; animation-delay:-2s; }
+  @keyframes hEar { 0%,88%,100% { transform:none; } 92% { transform:rotate(-12deg); } 96% { transform:rotate(6deg); } }
+  .hCheek { transform-origin:center; transition:transform .4s cubic-bezier(.3,1.6,.5,1); }
+  #hamWrap.nibble .hCheek { transform:scale(1.35); }
+  #hamWrap.nibble #hSeed { opacity:1; animation:hChew .32s ease-in-out infinite alternate; }
+  #hamWrap.nibble #hPaws { transform:translateY(-14px); }
+  #hPaws { transition:transform .4s; }
+  @keyframes hChew { to { transform:translateY(-2px) rotate(-6deg); } }
+  #hamWrap.pop #hHead { animation:hPop .7s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes hPop { 0% { transform:none; } 35% { transform:translateY(-14px) scale(1.06,.96); } 100% { transform:none; } }
+  .heart { position:absolute; pointer-events:none; color:#ff7d93; font-size:24px; animation:heart 1.6s ease-out forwards; }
+  @keyframes heart { from { opacity:1; transform:translate(0,0) scale(.5); } to { opacity:0; transform:translate(var(--dx),-70px) scale(1.2); } }
   @media (orientation:portrait) {
     :root { --ww:38vw; --clk:11vw; }
     #windowWrap { top:max(4vh,env(safe-area-inset-top)); }
     .bubble { width:min(400px,52vw); }
     #catWrap { left:30vw; width:min(40vw,320px); }
     #mug { left:calc(30vw + min(40vw,320px) + 4vw); }
-    #pumpkin1 { left:6vw !important; } #pumpkin2 { left:19vw !important; }
+    #hamWrap { left:1vw; width:27vw; }
+    #pumpkin1, #pumpkin2 { display:none !important; }  /* the hamster has the left of the sill */
   }
   @media (max-width:700px) { #clock { font-size:64px; } }
 </style>
@@ -395,6 +431,78 @@
 <div id="fly"><svg viewBox="0 0 20 16"><ellipse class="wing" cx="7" cy="5" rx="4" ry="5" fill="#dfefff" opacity=".75"/><ellipse class="wing" cx="13" cy="5" rx="4" ry="5" fill="#dfefff" opacity=".75"/><ellipse cx="10" cy="10" rx="5" ry="4" fill="#222"/></svg></div>
 </div>
 <div id="mug"><i class="steam" style="left:14px"></i><i class="steam" style="left:28px;animation-delay:1s"></i><i class="steam" style="left:42px;animation-delay:2s"></i></div>
+<div id="hamWrap" aria-label="Hamster">
+<svg id="hamster" viewBox="0 0 320 214">
+  <defs>
+    <radialGradient id="hFur" cx="50%" cy="35%" r="70%"><stop offset="0" stop-color="#ffbf73"/><stop offset=".7" stop-color="#f09a4a"/><stop offset="1" stop-color="#d9772f"/></radialGradient>
+    <radialGradient id="hWhite" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="#fffdf8"/><stop offset="1" stop-color="#f6e4cc"/></radialGradient>
+    <linearGradient id="hCard" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b98652"/><stop offset="1" stop-color="#dcae74"/></linearGradient>
+    <clipPath id="hHole"><ellipse cx="236" cy="150" rx="42" ry="46"/></clipPath>
+  </defs>
+  <!-- wheel -->
+  <g transform="translate(76 122) scale(.84) translate(-84 -104)">
+  <path d="M84 104 L44 210 M84 104 L124 210" stroke="#8a95a6" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="84" cy="104" r="74" fill="rgba(255,255,255,.08)"/>
+  <g id="hRungs">
+    <circle cx="84" cy="104" r="74" fill="none" stroke="#c7d0dc" stroke-width="9"/>
+    <circle cx="84" cy="104" r="68" fill="none" stroke="#9aa6b6" stroke-width="5" stroke-dasharray="3 9"/>
+    <path d="M84 34 V174 M14 104 H154 M35 55 L133 153 M133 55 L35 153" stroke="#c7d0dc" stroke-width="3.5"/>
+  </g>
+  <circle cx="84" cy="104" r="9" fill="#8a95a6"/>
+  </g>
+  <!-- runner (night) -->
+  <g id="hRunner" transform="translate(5 23) scale(.84)">
+    <g class="leg b"><ellipse cx="68" cy="172" rx="5" ry="7" fill="#f7c2b8"/></g>
+    <g class="leg b"><ellipse cx="96" cy="172" rx="5" ry="7" fill="#f7c2b8"/></g>
+    <g class="bob">
+      <ellipse cx="80" cy="152" rx="30" ry="21" fill="url(#hFur)"/>
+      <ellipse cx="84" cy="161" rx="22" ry="11" fill="url(#hWhite)"/>
+      <circle cx="51" cy="148" r="5" fill="#f2b06a"/>
+      <circle cx="106" cy="146" r="17" fill="url(#hFur)"/>
+      <ellipse cx="112" cy="153" rx="11" ry="8" fill="url(#hWhite)"/>
+      <circle cx="98" cy="131" r="7.5" fill="#f09a4a"/><circle cx="98" cy="131" r="4.2" fill="#f7a69a"/>
+      <circle cx="111" cy="142" r="3.2" fill="#2a160c"/><circle cx="112.2" cy="140.8" r="1.1" fill="#fff"/>
+      <ellipse cx="123" cy="149" rx="3" ry="2.4" fill="#ef8a9a"/>
+      <ellipse cx="108" cy="151" rx="4" ry="2.5" fill="#ff8f86" opacity=".45"/>
+    </g>
+    <g class="leg"><ellipse cx="72" cy="173" rx="5" ry="7" fill="#ffd4cb"/></g>
+    <g class="leg"><ellipse cx="100" cy="173" rx="5" ry="7" fill="#ffd4cb"/></g>
+  </g>
+  <!-- seed bowl -->
+  <g transform="translate(118 186)">
+    <path d="M0 6 Q2 28 30 28 Q58 28 60 6 Z" fill="#7fb6d9"/><ellipse cx="30" cy="6" rx="30" ry="6" fill="#a9d2ec"/>
+    <g fill="#4a3b2e"><ellipse cx="18" cy="3" rx="3" ry="5.5" transform="rotate(-30 18 3)"/><ellipse cx="30" cy="1" rx="3" ry="5.5" transform="rotate(15 30 1)"/><ellipse cx="42" cy="3" rx="3" ry="5.5" transform="rotate(50 42 3)"/><ellipse cx="25" cy="6" rx="3" ry="5.5" transform="rotate(80 25 6)"/></g>
+    <g stroke="#e8dcc8" stroke-width="1.2"><path d="M17 0 l2 6 M30 -3 l0 7 M41 0 l-2 6"/></g>
+  </g>
+  <!-- cardboard tube -->
+  <path d="M236 98 L186 108 A46 50 0 0 0 186 196 L236 204 Z" fill="url(#hCard)"/>
+  <path d="M206 102 L204 200" stroke="#a97644" stroke-width="2" opacity=".5"/>
+  <ellipse cx="236" cy="151" rx="50" ry="54" fill="#e9c08a"/>
+  <ellipse cx="236" cy="150" rx="42" ry="46" fill="#4a2d18"/>
+  <!-- hamster peeking out (day) -->
+  <g id="hPeek">
+    <g clip-path="url(#hHole)"><g id="hHead">
+      <g id="hEarL"><circle cx="210" cy="132" r="13" fill="#f09a4a"/><circle cx="211" cy="133" r="7.5" fill="#f7a69a"/></g>
+      <g id="hEarR"><circle cx="262" cy="132" r="13" fill="#f09a4a"/><circle cx="261" cy="133" r="7.5" fill="#f7a69a"/></g>
+      <ellipse cx="236" cy="158" rx="38" ry="33" fill="url(#hFur)"/>
+      <path d="M236 127 C232 136 232 146 236 153 C240 146 240 136 236 127 Z" fill="#fff1df" opacity=".8"/>
+      <ellipse class="hCheek" cx="214" cy="171" rx="14" ry="12" fill="url(#hWhite)"/>
+      <ellipse class="hCheek" cx="258" cy="171" rx="14" ry="12" fill="url(#hWhite)"/>
+      <ellipse cx="236" cy="174" rx="15" ry="12" fill="url(#hWhite)"/>
+      <g id="hEyes"><circle cx="220" cy="154" r="6" fill="#1e0f08"/><circle cx="252" cy="154" r="6" fill="#1e0f08"/>
+        <circle cx="222" cy="151.5" r="2.2" fill="#fff"/><circle cx="254" cy="151.5" r="2.2" fill="#fff"/></g>
+      <ellipse cx="211" cy="165" rx="6" ry="3.5" fill="#ff8f86" opacity=".45"/><ellipse cx="261" cy="165" rx="6" ry="3.5" fill="#ff8f86" opacity=".45"/>
+      <ellipse id="hNose" cx="236" cy="166" rx="4.5" ry="3.4" fill="#ef8a9a"/>
+      <path d="M236 169 v3 M236 172 q-4 4 -8 2 M236 172 q4 4 8 2" stroke="#8a4a3a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M222 166 C210 162 200 162 190 164 M222 170 C210 170 202 173 194 177 M250 166 C262 162 272 162 282 164 M250 170 C262 170 270 173 278 177" stroke="#fff" stroke-width="1.1" fill="none" opacity=".7"/>
+    </g></g>
+    <path d="M186 160 A50 54 0 0 0 286 160 A50 46 0 0 1 186 160 Z" fill="#e9c08a"/>
+    <g id="hSeed"><ellipse cx="236" cy="184" rx="8" ry="4.5" fill="#3e3128"/><path d="M230 184 h12" stroke="#e8dcc8" stroke-width="1.3"/></g>
+    <g id="hPaws"><ellipse cx="224" cy="194" rx="7" ry="5.5" fill="#ffd4cb"/><ellipse cx="248" cy="194" rx="7" ry="5.5" fill="#ffd4cb"/>
+      <path d="M221 192 v4 M225 191 v5 M245 191 v5 M249 192 v4" stroke="#e8a89c" stroke-width="1.2" stroke-linecap="round"/></g>
+  </g>
+</svg>
+</div>
 <div id="pumpkin1" class="season s-halloween pumpkin" style="left:24vw;width:min(11vw,120px)"></div>
 <div id="pumpkin2" class="season s-halloween pumpkin" style="left:35vw;width:min(7vw,76px)"></div>
 <div id="pumpkin3" class="season s-halloween pumpkin" style="left:calc(43vw + min(25vw,290px) + 3vw + 110px);width:min(8vw,88px)"></div>
@@ -938,6 +1046,35 @@ function setMood(m) {
   setMood(m);
   moodTimer = setTimeout(nextMood, MOODS[m] * 1000);
 })();
+
+// ---------- Hamster ----------
+// By day he peeks out of his tube, sniffs, and now and then nibbles a seed. At night he runs on his wheel.
+// Tap him and he squeaks, pops up and sends a heart (at night he stops running to say hello).
+const ham = $('hamWrap');
+function hamNibble(sec = 6) {
+  if (night) return;
+  ham.classList.add('nibble');
+  setTimeout(() => ham.classList.remove('nibble'), sec * 1000);
+}
+(function nextNibble() {
+  setTimeout(() => { hamNibble(); nextNibble(); }, (40 + Math.random() * 80) * 1000);
+})();
+ham.addEventListener('click', e => {
+  e.stopPropagation();
+  unlockAudio();
+  tone(1700, .09, .08); tone(2100, .12, .08, .11);
+  ham.classList.remove('pop'); void ham.offsetWidth; ham.classList.add('pop');
+  setTimeout(() => ham.classList.remove('pop'), 800);
+  if (night) { ham.classList.add('paused'); setTimeout(() => ham.classList.remove('paused'), 2500); }
+  else if (Math.random() < .4) hamNibble(4);
+  for (let i = 0; i < 3; i++) setTimeout(() => {
+    const h = document.createElement('span');
+    h.className = 'heart'; h.textContent = '♥';
+    h.style.left = (night ? 28 : 66) + Math.random() * 12 + '%'; h.style.top = (night ? 30 : 20) + '%';
+    h.style.setProperty('--dx', (Math.random() * 40 - 20) + 'px');
+    ham.appendChild(h); setTimeout(() => h.remove(), 1700);
+  }, i * 220);
+});
 
 // Seasonal room, picked by date: pumpkins and bats for Halloween, snow on the sill in winter, fairy lights in December.
 // hub.json "season" can force one ("halloween", "winter", "christmas") or turn it "off".
