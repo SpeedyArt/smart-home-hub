@@ -61,6 +61,9 @@
   .alert.soon { background:rgba(120,180,255,.22); border-color:rgba(150,200,255,.4); animation:alertIn .6s cubic-bezier(.2,1.2,.3,1) both, glow 2.4s ease-in-out .6s infinite; }
   @keyframes alertIn { from { opacity:0; transform:translateY(-6px) scale(.95); } }
   @keyframes glow { 50% { box-shadow:0 0 18px rgba(140,190,255,.45); } }
+  #wextra { font-size:15px; opacity:.6; margin-top:4px; }
+  #wupdated { font-size:12px; opacity:.4; margin-top:10px; }
+  #weather { transition:opacity 2s; } #weather.stale { opacity:.5; }
   #wplace { font-size:14px; opacity:.5; margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
 
   /* Ginger cat theme */
@@ -168,6 +171,8 @@
   .bubble .btn { flex:none; width:58px; height:58px; min-height:0; border-radius:50%; padding:0; font-size:0; }
   .bubble .btn svg { width:26px; height:26px; }
   #timerCard { cursor:pointer; }
+  #timerCard.missed { border-color:rgba(255,190,110,.75); box-shadow:0 0 30px rgba(255,170,70,.4); }
+  #timerCard.missed #tcText { color:#ffc979; }
   #timerCard .mini { width:62px; height:62px; }
   #timerCard .mini svg { width:62px; height:62px; }
   #timerCard .mini .lbl svg { width:26px; height:26px; }
@@ -191,6 +196,14 @@
   .on .sw i { transform:translateX(40px); background:#fff8ec; }
   .busy .sw i { animation:nudge 1s ease-in-out infinite; }
   @keyframes nudge { 50% { opacity:.55; } }
+  .keys { display:flex; gap:12px; margin:-4px 0 0 14px; }
+  .keys[hidden] { display:none; }
+  .key { width:54px; height:54px; border-radius:50%; display:grid; place-items:center; padding:0; color:var(--text);
+         background:rgba(255,236,214,.12); border:1px solid rgba(255,214,170,.28); -webkit-backdrop-filter:blur(24px); backdrop-filter:blur(24px); }
+  .key svg { width:24px; height:24px; }
+  .key.pressed { animation:keypress .35s ease; }
+  @keyframes keypress { 40% { transform:scale(.86); background:rgba(255,181,71,.5); } }
+  body.night .key { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.1); }
   body.night .bubble.toggle.on { border-color:rgba(255,190,110,.5); }
 
   /* Window */
@@ -271,7 +284,25 @@
 
   /* Seasonal room: pumpkins at Halloween, snow on the sill in winter, fairy lights in December */
   .season { display:none; pointer-events:none; }
-  body.s-halloween .s-halloween, body.s-snow .s-snow, body.s-lights .s-lights { display:block; }
+  body.s-halloween .s-halloween, body.s-snow .s-snow, body.s-lights .s-lights,
+  body.s-bonfire .s-bonfire, body.s-spring .s-spring { display:block; }
+  /* Bonfire Night: fireworks in the window once it's dark */
+  #fireworks { position:absolute; inset:0; z-index:3; opacity:0; transition:opacity 2s; }
+  body.sun-down #fireworks, body.night #fireworks { opacity:1; }
+  .fw { position:absolute; width:0; height:0; }
+  .fw b { position:absolute; left:-2px; top:-2px; width:4px; height:4px; border-radius:50%; background:currentColor;
+          box-shadow:0 0 6px currentColor; opacity:0; animation:fwSpark 4.2s ease-out var(--dl) infinite; }
+  @keyframes fwSpark { 0% { transform:rotate(var(--a)) translateY(0); opacity:0; } 4% { opacity:1; }
+                       55% { opacity:1; } 100% { transform:rotate(var(--a)) translateY(-36px) translateX(4px); opacity:0; } }
+  /* Spring: tulips on the sill, and painted eggs around Easter */
+  #springSill { position:fixed; bottom:calc(var(--sill) - 4px); left:calc(43vw + min(25vw,290px) + 3vw + 100px);
+                width:min(15vw,170px); z-index:1; transition:filter 2.4s; }
+  #springSill > div { display:flex; align-items:flex-end; gap:2px; }
+  #springSill svg { display:block; stroke:none; width:auto; }
+  #springSill .tulips { height:min(11vw,120px); }
+  #springSill .egg { height:min(3.6vw,40px); display:none; }
+  body.s-easter #springSill .egg { display:block; }
+  body.night #springSill { filter:brightness(.6) saturate(.8); }
   .pumpkin { position:fixed; bottom:calc(var(--sill) - 4px); z-index:1; transition:filter 2.4s; }
   .pumpkin .face { fill:#ffd36b; animation:flicker 2.6s ease-in-out infinite; }
   .pumpkin svg { display:block; width:100%; height:auto; stroke:none; overflow:visible; }
@@ -406,6 +437,14 @@
   .pol .peg:after { content:''; position:absolute; left:2px; right:2px; top:11px; height:3px; background:#8f8f8f; border-radius:2px; }
   .pol.note .ph { display:grid; place-items:center; text-align:center; padding:8%; background:#fff3d9; min-height:0; overflow:hidden;
                   font:18px/1.3 "Bradley Hand","Noteworthy","Marker Felt",cursive; color:#5a4636; }
+  #photoBig { position:absolute; inset:0; z-index:6; display:grid; place-items:center; background:rgba(20,10,4,.55);
+              opacity:0; pointer-events:none; transition:opacity .4s; }
+  #photoBig.open { opacity:1; pointer-events:auto; }
+  #photoBig .pc { width:min(70vh,80vw); padding:3.5% 3.5% 0; background:#fbf8f2; border-radius:3px; box-shadow:0 30px 80px rgba(0,0,0,.5);
+                  transform:scale(.6) rotate(-3deg); transition:transform .5s cubic-bezier(.2,1.3,.4,1); }
+  #photoBig.open .pc { transform:rotate(-1deg); }
+  #photoBig .ph { width:100%; aspect-ratio:1; background:#e9dfcf center/cover no-repeat; }
+  #photoBig .cap { height:2.4em; display:grid; place-items:center; font:30px "Bradley Hand","Noteworthy","Marker Felt",cursive; color:#5a4636; }
   #boardHint { position:absolute; left:50%; bottom:22px; transform:translateX(-50%); z-index:5; padding:10px 18px; border-radius:999px;
                background:rgba(60,35,18,.55); color:#fff4e6; font-size:16px; -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
                transition:opacity 1s; pointer-events:none; }
@@ -417,6 +456,7 @@
     #mug { left:calc(30vw + min(40vw,320px) + 4vw); }
     #hamWrap { left:1vw; width:27vw; }
     #pumpkin1, #pumpkin2 { display:none !important; }  /* the hamster has the left of the sill */
+    #springSill { left:calc(30vw + min(40vw,320px) + 4vw + 90px); width:min(18vw,150px); }
   }
   @media (max-width:700px) { #clock { font-size:64px; } }
 </style>
@@ -567,6 +607,7 @@
 <div id="pumpkin3" class="season s-halloween pumpkin" style="left:calc(43vw + min(25vw,290px) + 3vw + 110px);width:min(8vw,88px)"></div>
 <div id="snowSill" class="season s-snow"></div>
 <div id="lightsSill" class="season s-lights lights"></div>
+<div id="springSill" class="season s-spring"></div>
 <div id="app">
 <header id="header"></header>
 <div id="windowWrap">
@@ -575,7 +616,7 @@
     <div id="sun"></div><div id="moon"></div>
     <div id="clouds"></div><div id="precip"></div><div id="fog"></div><div id="flash"></div>
     <div class="season s-halloween bat" style="top:22%;animation-delay:-3s"></div><div class="season s-halloween bat" style="top:38%;width:8%;animation-delay:-10s;animation-duration:17s"></div>
-    <div class="season s-snow snowpile l"></div><div class="season s-snow snowpile r"></div>
+    <div id="fireworks" class="season s-bonfire"></div><div class="season s-snow snowpile l"></div><div class="season s-snow snowpile r"></div>
     <div id="robin"><svg viewBox="0 0 40 34"><g class="bob">
       <path d="M8 16 L0 11 L3 21 Z" fill="#5e412b"/><ellipse cx="18" cy="18" rx="13" ry="10" fill="#7a5638"/>
       <circle cx="28" cy="10" r="7.5" fill="#7a5638"/><ellipse cx="26" cy="18" rx="8" ry="7.5" fill="#f0743a"/>
@@ -599,7 +640,7 @@
 </div>
 </div>
 <div id="photoBoard"><div class="sunbeams"></div><svg id="strings"></svg><div id="pols"></div><div class="dim"></div>
-  <svg class="lit" id="lights"></svg><div id="boardHint">Tap anywhere to go back to the window</div></div>
+  <svg class="lit" id="lights"></svg><div id="photoBig"><div class="pc"><div class="ph"></div><div class="cap"></div></div></div><div id="boardHint">Tap anywhere to go back to the window</div></div>
 <div id="toast"></div>
 <div id="sheet"><div class="panel" id="sheetPanel">
   <div id="dialWrap">
@@ -650,6 +691,16 @@ function clock12(d, mins = true) {
   return (mins || m ? `${h}:${String(m).padStart(2, '0')}` : `${h}`) + ap;
 }
 const $ = id => document.getElementById(id);
+// Messages to panel.py go out one at a time: two page loads in a row would cancel the first one.
+const panelQueue = [];
+function panel(path) {
+  panelQueue.push(path);
+  if (panelQueue.length === 1) setTimeout(sendNext, 0);
+}
+function sendNext() {
+  location.href = 'panel://' + panelQueue[0];
+  setTimeout(() => { panelQueue.shift(); if (panelQueue.length) sendNext(); }, 60);
+}
 
 // Theme
 const t = HUB.theme || {}, root = document.documentElement.style;
@@ -671,7 +722,7 @@ function tick() {
   const d = new Date(), h = d.getHours();
   $('clock').textContent = clock12(d);
   $('date').textContent = d.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
-  $('greet').textContent = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  $('greet').textContent = h < 5 || h >= 22 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 tick(); setInterval(tick, 1000);
 
@@ -688,19 +739,22 @@ Object.assign(ICONS, {
   storm:'<path d="M7 15h11a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 2A3.5 3.5 0 0 0 7 15zM13 15l-3 4h4l-3 4"/>',
 });
 const wxFor = code => WX.find(([max]) => code <= max) || WX[WX.length - 1];
-// Called by panel.py, which fetches the forecast every 15 minutes.
-let wxData = null, wxPlace = '';
+// Called by panel.py, which fetches the forecast every 10 minutes.
+let wxData = null, wxPlace = '', wxTime = 0, wxOffline = false;
 function setWeather(d, place) {
   if (!$('weather')) return;
-  wxData = d; wxPlace = place;
+  wxData = d; wxPlace = place; wxTime = Date.now(); wxOffline = false;
   const [, text, icon] = wxFor(d.current.weather_code), day = d.daily;
   $('weather').innerHTML = `<div>
       <div id="wtemp">${Math.round(d.current.temperature_2m)}°</div>
       <div id="wdesc">${text} · H ${Math.round(day.temperature_2m_max[0])}° L ${Math.round(day.temperature_2m_min[0])}° · ${day.precipitation_probability_max[0] ?? 0}% rain</div>
+      <div id="wextra"></div>
       ${place ? `<div id="wplace">${esc(place)}</div>` : ''}
       <div id="alerts"></div>
+      <div id="wupdated"></div>
     </div>${svg(icon)}`;
   renderAlerts();
+  weatherExtras();
   windowWeather(d.current.weather_code);
   if (typeof dayLight == 'function') dayLight();
 }
@@ -793,10 +847,36 @@ function renderAlerts() {
 setInterval(renderAlerts, 60000);
 function weatherMsg(text) {
   if ($('weather') && !$('wtemp')) $('weather').innerHTML = `<div id="wdesc">${esc(text)}</div>`;
+  else { wxOffline = true; weatherExtras(); }
 }
+// Sunrise or sunset, tomorrow's forecast in the evening, and how fresh the reading is.
+function weatherExtras() {
+  if (!wxData || !$('wextra')) return;
+  const day = wxData.daily, now = new Date(), when = s => clock12(new Date(s));
+  const lines = [];
+  if (day.sunset && new Date(day.sunset[0]) > now)
+    lines.push(new Date(day.sunrise[0]) > now ? `Sunrise ${when(day.sunrise[0])}` : `Sunset ${when(day.sunset[0])}`);
+  else if (day.sunrise && day.sunrise[1]) lines.push(`Sunrise ${when(day.sunrise[1])}`);
+  if (now.getHours() >= 18 && day.temperature_2m_max.length > 1)
+    lines.push(`Tomorrow ${wxFor(day.weather_code ? day.weather_code[1] : 2)[1].toLowerCase()} · H ${Math.round(day.temperature_2m_max[1])}° L ${Math.round(day.temperature_2m_min[1])}° · ${day.precipitation_probability_max[1] ?? 0}% rain`);
+  $('wextra').innerHTML = lines.map(l => `<div>${esc(l)}</div>`).join('');
+  const mins = Math.round((Date.now() - wxTime) / 60000);
+  const ago = mins < 2 ? 'just now' : mins < 60 ? `${mins} mins ago` : `${Math.round(mins / 60)} hr ago`;
+  $('wupdated').textContent = (wxOffline ? 'Weather offline · ' : '') + 'Updated ' + ago;
+  $('weather').classList.toggle('stale', mins > 60);
+}
+setInterval(weatherExtras, 60000);
 
 // Rooms, devices, buttons (one bubble per device).
 // A device with "toggle" is one big on/off switch: the bubble glows while it's on.
+// TV remote buttons, shown under the TV once the hub can talk to the TV directly.
+const REMOTE_KEYS = [['KEY_VOLUMEDOWN', 'voldown', 'Volume down'], ['KEY_MUTE', 'mute', 'Mute'],
+                     ['KEY_VOLUMEUP', 'volup', 'Volume up'], ['KEY_HOME', 'home', 'Home']];
+Object.assign(ICONS, {
+  voldown:'<path d="M4 9h4l5-4v14l-5-4H4zM16 12h5"/>',
+  volup:'<path d="M4 9h4l5-4v14l-5-4H4zM16 12h5M18.5 9.5v5"/>',
+  mute:'<path d="M4 9h4l5-4v14l-5-4H4zM16 9.5l5 5M21 9.5l-5 5"/>',
+});
 ICONS.tvset = '<rect x="2.5" y="4" width="19" height="13" rx="2.5"/><rect class="scr" x="5" y="6.5" width="14" height="8" rx="1"/><path d="M8 21h8M12 17v4"/>';
 $('rooms').innerHTML = (HUB.rooms || []).map((room, r) => `
   ${(HUB.rooms || []).length > 1 ? `<div class="roomlabel">${esc(room.name)}</div>` : ''}
@@ -805,7 +885,9 @@ $('rooms').innerHTML = (HUB.rooms || []).map((room, r) => `
       <div class="bi">${svg(dev.icon === 'tv' ? 'tvset' : dev.icon)}</div>
       <div class="bt"><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">Tap to turn on</div></div>
       <div class="sw"><i></i></div>
-    </div>` : `
+    </div>${dev.remote ? `
+    <div class="keys" hidden>${REMOTE_KEYS.map(([key, icon, label]) =>
+      `<button class="key" data-key="${key}" aria-label="${label}">${svg(icon)}</button>`).join('')}</div>` : ''}` : `
     <div class="bubble">
       <div class="bi">${svg(dev.icon)}</div>
       <div class="bt"><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">${esc(room.name)}</div></div>
@@ -852,7 +934,14 @@ document.querySelectorAll('#rooms .bubble.toggle').forEach(el => el.addEventList
   devWant[id] = {to, timer: setTimeout(() => { delete devWant[id]; showDevice(id); }, 5000)};
   devState[id] = to; tapped[id] = true;  // trust the tap until the live state changes
   showDevice(id);
-  location.href = `panel://${id}-${to}`;  // panel.py runs the Shortcut
+  panel(`${id}-${to}`);  // panel.py runs the Shortcut
+}));
+
+// Called by panel.py: show the TV remote buttons only while the TV lets the hub in.
+function setRemote(on) { document.querySelectorAll('#rooms .keys').forEach(k => k.hidden = !on); }
+document.querySelectorAll('#rooms .key').forEach(k => k.addEventListener('click', () => {
+  k.classList.remove('pressed'); void k.offsetWidth; k.classList.add('pressed');
+  panel('key/' + k.dataset.key);
 }));
 
 // Called by panel.py when a button's action finishes.
@@ -877,7 +966,7 @@ function done(id, ok, message) {
 
 document.querySelectorAll('#rooms .btn').forEach(btn => btn.addEventListener('click', () => {
   btn.classList.add('busy');
-  location.href = 'panel://' + btn.dataset.id;  // panel.py catches this
+  panel(btn.dataset.id);  // panel.py catches this
 }));
 
 // ---------- Night mode ----------
@@ -910,7 +999,7 @@ function setNight(on, x, y, animate = true) {
   };
   cancelAnimationFrame(reveal);
   document.body.classList.toggle('night', on);
-  location.href = 'panel://night-' + (on ? 1 : 0);  // panel.py dims the screen
+  panel('night-' + (on ? 1 : 0));  // panel.py dims the screen
   if (!animate) return done();
   bgN.style.visibility = 'visible';
   const t0 = performance.now(), dur = 2600;
@@ -1022,12 +1111,28 @@ function openBoard() {
   fillBoard();
   $('photoBoard').classList.add('open');
   $('boardHint').style.opacity = 1; setTimeout(() => $('boardHint').style.opacity = 0, 4000);
-  location.href = 'panel://photos';  // panel.py (re)reads the album, so newly added photos turn up
+  panel('photos');  // panel.py (re)reads the album, so newly added photos turn up
   clearInterval(P.timer); P.timer = setInterval(swapOne, 20000);
 }
-function closeBoard() { $('photoBoard').classList.remove('open'); clearInterval(P.timer); }
+function closeBoard() { $('photoBoard').classList.remove('open'); $('photoBig').classList.remove('open'); clearInterval(P.timer); }
 $('window').addEventListener('click', openBoard);
 $('photoBoard').addEventListener('click', closeBoard);
+// Tap a photo to see it big; tap again to put it back.
+$('pols').addEventListener('click', e => {
+  const pol = e.target.closest('.pol');
+  if (!pol || pol.classList.contains('note')) return;
+  e.stopPropagation();
+  const big = $('photoBig');
+  big.querySelector('.ph').style.backgroundImage = pol.querySelector('.ph').style.backgroundImage;
+  big.querySelector('.cap').textContent = pol.querySelector('.cap').textContent;
+  big.classList.add('open');
+  clearInterval(P.timer);
+});
+$('photoBig').addEventListener('click', e => {
+  e.stopPropagation();
+  $('photoBig').classList.remove('open');
+  clearInterval(P.timer); P.timer = setInterval(swapOne, 20000);
+});
 addEventListener('resize', () => { if ($('photoBoard').classList.contains('open')) { boardLayout(); fillBoard(); } });
 
 // ---------- Sound ----------
@@ -1045,7 +1150,6 @@ function tone(freq, dur, vol = .2, delay = 0) {
   o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + .05);
 }
 const tickSound = () => tone(2200, .025, .03);
-const chime = () => { tone(880, .9, .22); tone(1318.5, .9, .18, .18); tone(1760, 1.3, .15, .36); };
 
 // ---------- Timer ----------
 const TIMER_ON = (HUB.timer || {show: true}).show !== false;
@@ -1135,7 +1239,7 @@ $('chips').append(chip('−1', () => animateTo(sel - 1)),
   chip('+1', () => animateTo(sel + 1)));
 $('runChips').append(chip('+1 min', () => addTime(60)), chip('+5 min', () => addTime(300)), chip('+10 min', () => addTime(600)));
 
-function openSheet() { unlockAudio(); if (!T.running) drawSet(); $('sheet').classList.add('open'); }
+function openSheet() { unlockAudio(); clearMissed(); if (!T.running) drawSet(); $('sheet').classList.add('open'); }
 function closeSheet() { $('sheet').classList.remove('open'); }
 $('timerCard').onclick = openSheet;
 $('tClose').onclick = closeSheet;
@@ -1150,11 +1254,26 @@ function startTimer() {
   T.total = sel * 60; T.end = Date.now() + T.total * 1000; T.running = true; T.paused = false;
   $('sheetPanel').classList.add('running'); $('tPause').textContent = 'Pause';
   tone(1046.5, .25, .12);
-  kick();
+  kick(); saveTimer();
 }
 function addTime(sec) {
   if (T.paused) T.left += sec; else T.end += sec * 1000;
-  T.total += sec;
+  T.total += sec; saveTimer();
+}
+// panel.py keeps a running timer in a file on the iPad, so it carries on if the hub restarts.
+function saveTimer() {
+  const t = T.running ? {end: T.end, total: T.total, paused: T.paused, left: T.left} : null;
+  panel('timer/' + encodeURIComponent(JSON.stringify(t)));
+}
+// A timer that went off with nobody around leaves a note on the card until it's tapped.
+function showMissed(at) {
+  $('timerCard').classList.add('missed');
+  $('tcText').textContent = 'Timer finished'; $('tcSub').textContent = `at ${clock12(new Date(at))} · tap to clear`;
+}
+function clearMissed() {
+  if (!$('timerCard').classList.contains('missed')) return;
+  $('timerCard').classList.remove('missed');
+  $('tcText').textContent = 'Timer'; $('tcSub').textContent = 'Tap to set any time';
 }
 function resetTimer() {
   T.running = T.paused = false;
@@ -1162,13 +1281,14 @@ function resetTimer() {
   $('sheetPanel').classList.remove('running');
   $('miniArc').style.strokeDashoffset = MINI;
   $('tcText').textContent = 'Timer'; $('tcSub').textContent = 'Tap to set any time';
-  drawSet();
+  drawSet(); saveTimer();
 }
 $('tStart').onclick = startTimer;
 $('tCancel').onclick = resetTimer;
 $('tPause').onclick = () => {
   if (T.paused) { T.end = Date.now() + T.left * 1000; T.paused = false; $('tPause').textContent = 'Pause'; }
   else { T.left = leftNow(); T.paused = true; $('tPause').textContent = 'Resume'; }
+  saveTimer();
 };
 
 function loop() {
@@ -1194,12 +1314,14 @@ function finish() {
   $('tcText').textContent = "Time's up!"; $('tcSub').textContent = 'Tap to stop';
   dialWrap.classList.add('ringing');
   let n = 0;
+  const finishedAt = T.end;
+  panel('timer/null');
   const ring = () => {
-    chime();
+    panel('chime');  // Pythonista plays it, so it rings even with the iPad on silent
     const r = dialWrap.getBoundingClientRect(), d = document.createElement('div');
     d.className = 'ripple'; d.style.left = r.left + r.width / 2 + 'px'; d.style.top = r.top + r.height / 2 + 'px';
     d.style.setProperty('--s', 18); document.body.appendChild(d); setTimeout(() => d.remove(), 2000);
-    if (++n > 40) stopRinging();
+    if (++n > 40) { stopRinging(); showMissed(finishedAt); }  // nobody came: leave a note
   };
   ring(); T.ringing = setInterval(ring, 1600);
 }
@@ -1208,6 +1330,20 @@ function stopRinging() {
   dialWrap.classList.remove('ringing');
   resetTimer(); closeSheet();
 }
+// Pick up a timer that was running when the hub last closed.
+(function restoreTimer() {
+  const t = window.SAVED_TIMER;
+  if (!t || !TIMER_ON) return;
+  if (!t.paused && t.end <= Date.now()) {
+    if (Date.now() - t.end < 6 * 3600000) showMissed(t.end);  // it went off while the hub was closed
+    panel('timer/null');
+    return;
+  }
+  Object.assign(T, {running: true, paused: t.paused, total: t.total, end: t.end, left: t.left});
+  $('sheetPanel').classList.add('running'); $('tPause').textContent = t.paused ? 'Resume' : 'Pause';
+  if (t.paused) { $('tcText').textContent = fmt(t.left); $('tcSub').textContent = 'Paused'; }
+  requestAnimationFrame(loop);
+})();
 let lastFrame = 0;
 // Start the countdown loop if it isn't running (it can stall when the iPad flips to Shortcuts and back).
 function kick() { if (T.running && performance.now() - lastFrame > 1000) { lastFrame = performance.now(); requestAnimationFrame(loop); } }
@@ -1268,8 +1404,9 @@ ham.addEventListener('click', e => {
   }, i * 220);
 });
 
-// Seasonal room, picked by date: pumpkins and bats for Halloween, snow on the sill in winter, fairy lights in December.
-// hub.json "season" can force one ("halloween", "winter", "christmas") or turn it "off".
+// Seasonal room, picked by date: pumpkins and bats for Halloween, fireworks for Bonfire Night, snow on the sill in winter,
+// fairy lights in December, tulips in spring and painted eggs at Easter.
+// hub.json "season" can force one ("halloween", "bonfire", "winter", "christmas", "spring", "easter") or turn it "off".
 const PUMPKIN = `<svg viewBox="0 0 100 86">
   <path d="M50 14c-2-7 1-12 7-14l3 4c-4 2-5 5-4 10z" fill="#5b7a2e"/>
   <ellipse cx="30" cy="52" rx="26" ry="32" fill="#e8721c"/><ellipse cx="70" cy="52" rx="26" ry="32" fill="#e8721c"/>
@@ -1300,12 +1437,31 @@ function garland(swags, bulbsPer, sag) {
   }
   return `<svg viewBox="0 0 1000 ${sag + 30}" preserveAspectRatio="none"><path d="${wire}" stroke="#2f4a2a" stroke-width="2.5" fill="none"/>${bulbs}</svg>`;
 }
+function easterSunday(y) {  // the usual church calculation
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  return new Date(y, Math.floor((h + l - 7 * m + 114) / 31) - 1, (h + l - 7 * m + 114) % 31 + 1);
+}
+const tulip = (x, y, c) => `<path d="M${x - 6} ${y}q0-12 6-14q6 2 6 14q-6 4-12 0z" fill="${c}"/><path d="M${x - 2} ${y - 13}q2 6 2 13" stroke="rgba(0,0,0,.15)" stroke-width="1.5" fill="none"/>`;
+const TULIPS = `<svg class="tulips" viewBox="0 0 80 100">
+  <path d="M40 66V30M31 66Q29 46 23 37M49 66Q51 46 57 35" stroke="#4f8a3a" stroke-width="3" fill="none"/>
+  <path d="M38 62q-14-4-14-20q10 6 14 20zM42 62q14-6 16-18q-12 4-16 18z" fill="#5c9a44"/>
+  ${tulip(40, 30, '#ff6b8a')}${tulip(23, 37, '#ffd24a')}${tulip(57, 35, '#ff8a5c')}
+  <path d="M22 70h36l-4 28H26z" fill="#c9683a"/><rect x="19" y="64" width="42" height="9" rx="2" fill="#dd7a48"/></svg>`;
+const egg = (c1, c2) => `<svg class="egg" viewBox="0 0 30 38"><ellipse cx="15" cy="21" rx="13" ry="16" fill="${c1}"/>
+  <path d="M3 17q6-4 12 0t12 0M2.5 25q6 4 12.5 0t12.5 0" stroke="${c2}" stroke-width="2.6" fill="none"/></svg>`;
 function seasonNow(d = new Date()) {
   const forced = new URLSearchParams(location.search).get('season') || HUB.season;
   if (forced === 'off') return [];
-  if (forced && forced !== 'auto') return {halloween: ['halloween'], winter: ['snow'], christmas: ['snow', 'lights']}[forced] || [];
+  if (forced && forced !== 'auto') return {halloween: ['halloween'], bonfire: ['bonfire'], winter: ['snow'],
+    christmas: ['snow', 'lights'], spring: ['spring'], easter: ['spring', 'easter']}[forced] || [];
   const m = d.getMonth() + 1, day = d.getDate(), on = [];
   if ((m === 10 && day >= 13) || (m === 11 && day === 1)) on.push('halloween');
+  if (m === 11 && day >= 4 && day <= 6) on.push('bonfire');
+  if (m >= 3 && m <= 5) on.push('spring');
+  const e = easterSunday(d.getFullYear()), today = new Date(d.getFullYear(), m - 1, day);
+  if (today >= new Date(+e - 7 * 864e5) && today <= new Date(+e + 864e5)) on.push('spring', 'easter');  // the week before, to Easter Monday
   if (m === 12 || m <= 2) on.push('snow');
   if (m === 12 || (m === 1 && day <= 6)) on.push('lights');
   return on;
@@ -1317,9 +1473,13 @@ function seasonNow(d = new Date()) {
   document.querySelectorAll('.snowpile').forEach(p => p.innerHTML = drift(3));
   $('lightsWin').innerHTML = garland(3, 5, 22);
   $('lightsSill').innerHTML = garland(6, 6, 14);
+  $('springSill').innerHTML = `<div>${TULIPS}${egg('#9fd8ff', '#ff8ae0')}${egg('#ffd24a', '#7cc96a')}${egg('#ffb3c6', '#8a7cff')}</div>`;
+  $('fireworks').innerHTML = [[22, 26, '#ffd24a', 0], [72, 18, '#ff6b8a', 1.4], [48, 36, '#7cd6ff', 2.5], [84, 42, '#b98aff', 3.3], [12, 44, '#7cff8a', 2]]
+    .map(([x, y, c, dl]) => `<i class="fw" style="left:${x}%;top:${y}%;color:${c};--dl:${dl}s">`
+      + Array.from({length: 12}, (_, k) => `<b style="--a:${k * 30}deg"></b>`).join('') + '</i>').join('');
   const apply = () => {
     const on = seasonNow();
-    for (const s of ['halloween', 'snow', 'lights']) document.body.classList.toggle('s-' + s, on.includes(s));
+    for (const s of ['halloween', 'bonfire', 'snow', 'lights', 'spring', 'easter']) document.body.classList.toggle('s-' + s, on.includes(s));
   };
   apply(); setInterval(apply, 3600 * 1000);
 })();

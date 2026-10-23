@@ -13,7 +13,11 @@ Everything you see comes from **hub.json**, so you can change it as much as you 
 
 **TV switch:** the TV is one on/off switch; tap anywhere on its bubble. It glows while the TV is on.
 The hub sees whether the TV is on by itself: it finds the TV on your Wi-Fi (the first time, allow Pythonista
-to use the local network) and keeps its address in `private.json` on the iPad. Any device can be a switch:
+to use the local network) and keeps its address in `private.json` on the iPad.
+If the TV lets the hub log in to its remote port (like the RemoteNOW app does), the hub also reads the TV's real
+power state (standby included), switches it on and off directly without opening Shortcuts, and shows volume,
+mute and Home buttons under the TV (`"remote": true`). If the TV says no, the hub uses the Shortcuts as before.
+Any device can be a switch:
 `{ "name": "Lamp", "icon": "light", "toggle": { "on": {"shortcut": "Lamp On"}, "off": {"shortcut": "Lamp Off"} } }`
 
 Home Screen icon: in Pythonista open `panel.py`, tap the wrench > **Shortcuts… > Home Screen**.
@@ -42,17 +46,18 @@ camera, home, star, play, bed, sun, edit
 
 **Colours:** any colour code, e.g. `"#ffb547"`. Pick one from a site like htmlcolorcodes.com.
 
-**Weather:** shown top right, refreshed every 15 minutes (free Open-Meteo service).
+**Weather:** shown top right, refreshed every 10 minutes (free Open-Meteo service).
 The hub uses the iPad's location, so tap **Allow** when Pythonista asks the first time.
 If that doesn't work, type your town under `weather`, e.g. `"place": "Manchester"`, and it looks it up.
-If the weather can't load, a short message there says why.
+If the weather can't load, a short message there says why. It also shows sunrise or sunset, tomorrow's forecast
+in the evening, and when it last updated; an old reading fades so you know it's out of date.
 Heads-ups appear under the weather when they matter: "Rain in ~20 mins", "Rain easing off in ~30 mins",
 "Rain likely around 6 PM", frost overnight, and strong gusts. Set `"show": false` to hide it.
 
 **Photo board:** tap the window and it flips to a wall of polaroids pegged on fairy-light strings. Tap anywhere to go back.
 To choose the photos, make an album called **Hub** in the Photos app and add the ones you want (tap **Allow** when Pythonista asks for Photos).
 Add or remove photos from that album any time; the board picks up the changes the next time you open it. With lots of photos, one flips round to a new one every 20 seconds.
-Your photos stay on the iPad: they go straight from Photos to the screen and are never uploaded or saved anywhere.
+Tap a photo to see it big. Your photos stay on the iPad: they go straight from Photos to the screen and are never uploaded or saved anywhere.
 
 **Night mode:** tap the cat to switch (it falls asleep), or let it switch by itself.
 
@@ -64,7 +69,12 @@ Under `night`: `"auto": true` uses the `"start"` / `"end"` times (24-hour, e.g. 
 
 **Timer:** tap the Timer bubble. Drag around the ring (each full turn is an hour, up to 12 hours),
 or tap a quick time. While it runs you can add time, pause or cancel. Set `"timer": {"show": false}` to hide it.
-Keep the iPad's volume up to hear the chime.
+The chime rings even with the iPad on silent (keep the volume up). If nobody stops it, the Timer bubble
+says when it finished. A running timer carries on if the hub restarts.
+
+**Seasons:** pumpkins and bats for Halloween, fireworks in the window for Bonfire Night (4 to 6 November),
+snow in winter, fairy lights in December, tulips in spring and painted eggs around Easter. `"season"` in hub.json can force
+one (`"halloween"`, `"bonfire"`, `"winter"`, `"christmas"`, `"spring"`, `"easter"`) or turn them `"off"`.
 
 **Layout:** a cosy room. The cat sits on the windowsill, and the window shows the live weather
 (sun, clouds, rain, snow, storms, and the moon and stars at night). Controls are round bubbles on the left.

@@ -37,7 +37,8 @@
               "shortcut": "TV Off"
             }
           },
-          "status": "hisense"
+          "status": "hisense",
+          "remote": true
         }
       ]
     }

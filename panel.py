@@ -8,7 +8,7 @@ import socket
 import threading
 import time
 import webbrowser
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import urlopen
 
@@ -137,6 +137,42 @@ def send_photos():
         _photo_lock.release()
 
 
+def chime():
+    """The timer's alarm. Played by Pythonista so it rings even with the iPad on silent."""
+    try:
+        import sound
+        sound.set_honors_silent_switch(False)
+        sound.set_volume(1.0)
+        for note in ("game:Ding_3", "game:Ding_3"):
+            sound.play_effect(note)
+            time.sleep(0.45)
+    except Exception:
+        pass
+
+
+TIMER_FILE = os.path.join(HERE, "timer.json")  # a running timer, so it carries on if the hub restarts
+
+
+def save_timer(data):
+    try:
+        if data in ("", "null"):
+            if os.path.exists(TIMER_FILE):
+                os.remove(TIMER_FILE)
+        else:
+            with open(TIMER_FILE, "w", encoding="utf-8") as f:
+                f.write(json.dumps(json.loads(data)))
+    except Exception:
+        pass
+
+
+def saved_timer():
+    try:
+        with open(TIMER_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
 class Bridge:
     def webview_should_start_load(self, webview, url, nav_type):
         if not url.startswith("panel://"):
@@ -152,11 +188,24 @@ class Bridge:
         if button_id.startswith("night-"):
             set_night_brightness(button_id.endswith("1"))
             return
+        if button_id == "chime":
+            chime()
+            return
+        if button_id.startswith("timer/"):
+            save_timer(unquote(button_id[len("timer/"):]))
+            return
+        if button_id.startswith("key/"):  # a TV remote button, e.g. key/KEY_VOLUMEUP
+            if not (_tv_link and _tv_link.key(button_id[4:])):
+                webview.eval_js("toast('The TV isn\\'t answering right now')")
+            return
         try:
             r, d, b = button_id.split("-")
             device = HUB["rooms"][int(r)]["devices"][int(d)]
             if b in ("on", "off"):  # a switch device, e.g. the TV
-                ok, msg = run_button(device["toggle"][b])
+                if device.get("status") == "hisense" and tv_power(b):
+                    ok, msg = True, ""  # done straight over the Wi-Fi
+                else:
+                    ok, msg = run_button(device["toggle"][b])
                 hurry_status()
             else:
                 ok, msg = run_button(device["buttons"][int(b)])
@@ -173,7 +222,8 @@ except ValueError as e:  # a typo in hub.json
     raise SystemExit
 
 with open(os.path.join(HERE, "panel.html"), encoding="utf-8") as f:
-    html = f.read().replace("<script>", f"<script>window.HUB = {json.dumps(HUB)};\n", 1)
+    html = f.read().replace("<script>", f"<script>window.HUB = {json.dumps(HUB)};\n"
+                            f"window.SAVED_TIMER = {json.dumps(saved_timer())};\n", 1)
 
 class Hub(ui.View):
     """Full-screen holder for the web page. Puts the iPad back to normal when the hub closes."""
@@ -271,15 +321,20 @@ def weather_loop():
             lat, lon, place = weather_place(w)
             url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
                    "&current=temperature_2m,weather_code,precipitation"
-                   "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset"
+                   "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset"
                    "&minutely_15=precipitation"
                    "&hourly=precipitation_probability,temperature_2m,wind_gusts_10m"
                    "&wind_speed_unit=mph&timezone=auto&forecast_days=2")
             data = json.load(urlopen(url, timeout=15))
             js(f"setWeather({json.dumps(data)}, {json.dumps(place)})")
             wait = 10 * 60  # often enough for rain heads-ups
-        except Exception as e:
-            js(f"weatherMsg({json.dumps('Weather: ' + str(e))})")
+        except ValueError as e:  # something to fix on the iPad, e.g. location not allowed
+            if isinstance(e, json.JSONDecodeError):
+                e = "Weather offline, trying again"
+            js(f"weatherMsg({json.dumps(str(e))})")
+            wait = 2 * 60
+        except Exception:  # Wi-Fi blip or the weather service is busy
+            js("weatherMsg('Weather offline, trying again')")
             wait = 2 * 60  # try again soon
         for _ in range(wait):
             if not hub_view.on_screen:
@@ -292,8 +347,9 @@ threading.Thread(target=weather_loop, daemon=True).start()
 
 
 # ---------- Live device status ----------
-# A Hisense TV answers on its remote-control port (the one the RemoteNOW app uses) only while it's on.
-# The hub finds the TV on the Wi-Fi by itself and remembers its address in private.json (on this iPad only).
+# A Hisense TV answers on its remote-control port (the one the RemoteNOW app uses) while it's on,
+# and with Active Standby also while it's asleep. The hub finds the TV on the Wi-Fi by itself and
+# remembers its address in private.json (on this iPad only).
 HISENSE_PORT = 36669
 _status_hurry = threading.Event()
 
@@ -312,7 +368,7 @@ def answers(ip, timeout=1.0):
 
 
 def find_tv():
-    """Look for the TV across the home network (only works while it's on)."""
+    """Look for the TV across the home network (only works while it's on or in Active Standby)."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("1.1.1.1", 80))  # no data is sent; this just tells us our own address
@@ -339,7 +395,155 @@ def remember_tv(key, value):
         json.dump(mine, f, indent=2)
 
 
+# ---------- Talking to the TV directly ----------
+# The remote port is a small message server (MQTT) that the RemoteNOW app logs in to. If this TV lets
+# the hub in too, the hub can read the TV's real power state (asleep or awake) and press remote buttons
+# itself, without flipping over to Shortcuts. If the TV says no, the hub carries on as before.
+class TVLink:
+    USER, PASSWORD = "hisenseservice", "multimqttservice"  # the RemoteNOW app's standard login, the same on every Hisense TV
+
+    def __init__(self, ip):
+        import random
+        self.ip = ip
+        self.id = "02:" + ":".join(f"{random.randrange(256):02x}" for _ in range(5))  # a made-up remote, not anything personal
+        self.sock = None
+        self.state = None        # True awake, False asleep, None not heard yet
+        self.heard = 0           # when the TV last told us its state
+        self.lock = threading.Lock()
+
+    @staticmethod
+    def _str(s):
+        b = s.encode()
+        return len(b).to_bytes(2, "big") + b
+
+    @staticmethod
+    def _packet(kind, body):
+        n, size = len(body), b""
+        while True:
+            byte, n = n % 128, n // 128
+            size += bytes([byte | (128 if n else 0)])
+            if not n:
+                break
+        return bytes([kind]) + size + body
+
+    def _read(self):
+        kind = self.sock.recv(1)
+        if not kind:
+            raise OSError("closed")
+        n, mult = 0, 1
+        while True:
+            b = self.sock.recv(1)[0]
+            n += (b & 127) * mult
+            mult *= 128
+            if not b & 128:
+                break
+        body = b""
+        while len(body) < n:
+            chunk = self.sock.recv(n - len(body))
+            if not chunk:
+                raise OSError("closed")
+            body += chunk
+        return kind[0], body
+
+    def connect(self):
+        import ssl
+        for secure in (True, False):  # newer TVs only talk encrypted
+            try:
+                raw = socket.create_connection((self.ip, HISENSE_PORT), timeout=3)
+                if secure:
+                    ctx = ssl.create_default_context()
+                    ctx.check_hostname, ctx.verify_mode = False, ssl.CERT_NONE  # the TV's own home-made certificate
+                    raw = ctx.wrap_socket(raw)
+                self.sock = raw
+                body = (self._str("MQTT") + bytes([4, 0xC2]) + (60).to_bytes(2, "big")
+                        + self._str(self.id) + self._str(self.USER) + self._str(self.PASSWORD))
+                self.sock.sendall(self._packet(0x10, body))
+                kind, reply = self._read()
+                if kind >> 4 == 2 and reply[1] == 0:  # logged in
+                    self.sock.sendall(self._packet(0x82, (1).to_bytes(2, "big") + self._str("/remoteapp/mobile/#") + b"\x00"))
+                    self.sock.settimeout(None)
+                    threading.Thread(target=self._listen, daemon=True).start()
+                    threading.Thread(target=self._ping, daemon=True).start()
+                    return True
+            except Exception:
+                pass
+            self.close()
+        return False
+
+    def close(self):
+        try:
+            self.sock.close()
+        except Exception:
+            pass
+        self.sock = None
+
+    @property
+    def alive(self):
+        return self.sock is not None
+
+    def _listen(self):
+        sock = self.sock
+        try:
+            while self.sock is sock:
+                kind, body = self._read()
+                if kind >> 4 != 3:
+                    continue
+                n = int.from_bytes(body[:2], "big")
+                start = 2 + n + (2 if kind & 6 else 0)
+                try:
+                    msg = json.loads(body[start:].decode() or "{}")
+                except ValueError:
+                    continue
+                state = msg.get("statetype") if isinstance(msg, dict) else None
+                if state:  # e.g. "livetv", "app", or "fake_sleep_0" while in Active Standby
+                    self.state = not state.startswith("fake_sleep")
+                    self.heard = time.time()
+        except Exception:
+            pass
+        if self.sock is sock:
+            self.close()
+
+    def _ping(self):
+        sock = self.sock
+        while self.sock is sock:
+            time.sleep(30)
+            self._send(b"\xc0\x00")
+
+    def _send(self, data):
+        with self.lock:
+            try:
+                self.sock.sendall(data)
+                return True
+            except Exception:
+                self.close()
+                return False
+
+    def publish(self, topic, payload=""):
+        return self.alive and self._send(self._packet(0x30, self._str(topic) + payload.encode()))
+
+    def ask_state(self):
+        return self.publish(f"/remoteapp/tv/ui_service/{self.id}$normal/actions/gettvstate")
+
+    def key(self, name):
+        """Press a remote button, e.g. KEY_POWER, KEY_VOLUMEUP, KEY_MUTE."""
+        return self.publish(f"/remoteapp/tv/remote_service/{self.id}$normal/actions/sendkey", name)
+
+
+_tv_link = None
+
+
+def tv_power(want):
+    """Switch the TV straight over the Wi-Fi. Returns True when it handled it, False to use the Shortcut."""
+    link = _tv_link
+    if not (link and link.alive and link.state is not None and time.time() - link.heard < 60):
+        return False
+    if link.state == (want == "on"):
+        return True  # already there
+    return link.key("KEY_POWER")
+
+
 def status_loop():
+    global _tv_link
     devices = [(f"{r}-{d}", dev) for r, room in enumerate(HUB.get("rooms") or [])
                for d, dev in enumerate(room.get("devices") or []) if dev.get("status") == "hisense"]
     if not devices:
@@ -349,11 +553,16 @@ def status_loop():
             break
         time.sleep(0.25)
     tv = HUB.setdefault("tv", {})
-    last_search = 0
+    last_search, search_gap = 0, 120
+    last_link_try = 0
     hurry_until = 0
+    remote_shown = None
     while hub_view.on_screen:
+        hurry = time.time() < hurry_until
         on = answers(tv["ip"]) if tv.get("ip") else False
-        if not on and time.time() - last_search > (20 if time.time() < hurry_until else 120):
+        if on:
+            search_gap = 120
+        elif time.time() - last_search > (20 if hurry else search_gap):
             last_search = time.time()  # it may be off, or it may have a new address: have a look
             found = find_tv()
             if found:
@@ -364,10 +573,31 @@ def status_loop():
                         remember_tv("ip", found)
                     except Exception:
                         pass
-        state = on if (on or tv.get("ip")) else None  # never seen it on: we can't tell yet
+            else:
+                search_gap = min(search_gap * 2, 15 * 60)  # it's properly off: look less and less often
+        # Try the direct line while the TV answers (every 5 minutes if it says no).
+        if on and not (_tv_link and _tv_link.alive and _tv_link.ip == tv["ip"]) and time.time() - last_link_try > 300:
+            last_link_try = time.time()
+            link = TVLink(tv["ip"])
+            _tv_link = link if link.connect() else None
+        link = _tv_link if (_tv_link and _tv_link.alive) else None
+        if link:
+            asked = time.time()
+            link.ask_state()
+            for _ in range(15):
+                if link.heard >= asked:
+                    break
+                time.sleep(0.1)
+        if link and link.state is not None and time.time() - link.heard < 60:
+            state = link.state  # the TV's own word, standby included
+        else:
+            state = on if (on or tv.get("ip")) else None  # never seen it on: we can't tell yet
+        if bool(link) != remote_shown:
+            remote_shown = bool(link)
+            js(f"setRemote({json.dumps(remote_shown)})")
         for key, _ in devices:
             js(f"setDeviceState({json.dumps(key)}, {json.dumps(state)})")
-        if _status_hurry.wait(2 if time.time() < hurry_until else 10):
+        if _status_hurry.wait(2 if hurry else 5):
             _status_hurry.clear()
             hurry_until = time.time() + 45
 

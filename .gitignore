@@ -3,3 +3,4 @@ tv.json
 tv.py
 *.pyc
 __pycache__/
+timer.json
