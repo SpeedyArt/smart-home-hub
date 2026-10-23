@@ -49,6 +49,11 @@ If the weather can't load, a short message there says why.
 Heads-ups appear under the weather when they matter: "Rain in ~20 mins", "Rain easing off in ~30 mins",
 "Rain likely around 6 PM", frost overnight, and strong gusts. Set `"show": false` to hide it.
 
+**Photo board:** tap the window and it flips to a wall of polaroids pegged on fairy-light strings. Tap anywhere to go back.
+To choose the photos, make an album called **Hub** in the Photos app and add the ones you want (tap **Allow** when Pythonista asks for Photos).
+Add or remove photos from that album any time; the board picks up the changes the next time you open it. With lots of photos, one flips round to a new one every 20 seconds.
+Your photos stay on the iPad: they go straight from Photos to the screen and are never uploaded or saved anywhere.
+
 **Night mode:** tap the cat to switch (it falls asleep), or let it switch by itself.
 
 **Cat moods:** by day the cat now and then naps, stretches with a yawn, chases a fly, or watches a robin land in the window.

@@ -1,5 +1,6 @@
 """Smart home hub for iPad (Pythonista). Everything on screen comes from hub.json:
 edit that file to add rooms, devices, buttons, icons and colours, then run this again."""
+import base64
 import json
 import os
 import socket
@@ -82,6 +83,58 @@ def set_night_brightness(on):
         pass  # dimming is a nice-to-have
 
 
+# ---------- Photo board ----------
+# The photos come from one album in the iPad's Photos app (hub.json photos.album, "Hub" by default).
+# They go straight from Photos into the page on this iPad: never uploaded, never saved to a file.
+_photo_cache = {}  # photo id -> small JPEG ready for the page
+_photo_lock = threading.Lock()
+
+
+def photo_data(asset):
+    from io import BytesIO
+    png = asset.get_ui_image((640, 640)).to_png()
+    try:
+        from PIL import Image
+        out = BytesIO()
+        Image.open(BytesIO(png)).convert("RGB").save(out, "JPEG", quality=82)
+        return "data:image/jpeg;base64," + base64.b64encode(out.getvalue()).decode()
+    except Exception:
+        return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def send_photos():
+    if not _photo_lock.acquire(blocking=False):
+        return  # already sending
+    try:
+        name = (HUB.get("photos") or {}).get("album") or "Hub"
+        try:
+            import photos
+            album = next((a for a in photos.get_albums() if a.title.strip().lower() == name.lower()), None)
+        except Exception:
+            album = None
+            js(f"photoList([], {json.dumps('Allow Photos for Pythonista in the Settings app')})")
+            return
+        assets = [a for a in (album.assets if album else []) if a.media_type == "image"][-60:]
+        if not assets:
+            note = "Put photos in an album called \u201c" + name + "\u201d in the Photos app"
+            js(f"photoList([], {json.dumps(note)})")
+            return
+        ids = [a.local_id for a in assets]
+        missing = set(json.loads(js(f"photoList({json.dumps(ids)}, '')") or "[]"))
+        for a in assets:
+            if a.local_id not in missing:
+                continue
+            try:
+                if a.local_id not in _photo_cache:
+                    _photo_cache[a.local_id] = photo_data(a)
+                cap = a.creation_date.strftime("%b %Y") if a.creation_date else ""
+            except Exception:
+                continue
+            js(f"addPhoto({json.dumps({'id': a.local_id, 'src': _photo_cache[a.local_id], 'cap': cap})})")
+    finally:
+        _photo_lock.release()
+
+
 class Bridge:
     def webview_should_start_load(self, webview, url, nav_type):
         if not url.startswith("panel://"):
@@ -91,6 +144,9 @@ class Bridge:
 
     @ui.in_background
     def run(self, webview, button_id):
+        if button_id == "photos":
+            threading.Thread(target=send_photos, daemon=True).start()
+            return
         if button_id.startswith("night-"):
             set_night_brightness(button_id.endswith("1"))
             return
