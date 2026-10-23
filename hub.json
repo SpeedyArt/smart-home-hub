@@ -26,20 +26,15 @@
         {
           "name": "TV",
           "icon": "tv",
-          "buttons": [
-            {
-              "label": "On",
-              "icon": "power",
-              "color": "#ffb547",
+          "toggle": {
+            "on": {
               "shortcut": "TV On"
             },
-            {
-              "label": "Off",
-              "icon": "moon",
-              "color": "#f6d7b0",
+            "off": {
               "shortcut": "TV Off"
             }
-          ]
+          },
+          "status": "hisense"
         }
       ]
     }

@@ -11,6 +11,11 @@ Everything you see comes from **hub.json**, so you can change it as much as you 
    one called exactly **TV On** (turns it on) and one called **TV Off** (turns it off).
 4. Open `panel.py` in Pythonista and tap ▶.
 
+**TV switch:** the TV is one on/off switch; tap anywhere on its bubble. It glows while the TV is on.
+The hub sees whether the TV is on by itself: it finds the TV on your Wi-Fi (the first time, allow Pythonista
+to use the local network) and keeps its address in `private.json` on the iPad. Any device can be a switch:
+`{ "name": "Lamp", "icon": "light", "toggle": { "on": {"shortcut": "Lamp On"}, "off": {"shortcut": "Lamp Off"} } }`
+
 Home Screen icon: in Pythonista open `panel.py`, tap the wrench > **Shortcuts… > Home Screen**.
 Keep it on: Settings > Display & Brightness > Auto-Lock > **Never**, and leave the iPad charging.
 
