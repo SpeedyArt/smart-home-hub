@@ -475,6 +475,11 @@ const ICONS = {
 const svg = name => `<svg viewBox="0 0 24 24">${ICONS[name] || ICONS.star}</svg>`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const HUB = window.HUB;
+// 12-hour times with am/pm: "8:05am", or "10pm" for hour-only labels.
+function clock12(d, mins = true) {
+  const h = d.getHours() % 12 || 12, m = d.getMinutes(), ap = d.getHours() < 12 ? 'am' : 'pm';
+  return (mins || m ? `${h}:${String(m).padStart(2, '0')}` : `${h}`) + ap;
+}
 const $ = id => document.getElementById(id);
 
 // Theme
@@ -495,7 +500,7 @@ if ((HUB.weather || {}).show !== false)
 function tick() {
   if (HUB.show_clock === false) return;
   const d = new Date(), h = d.getHours();
-  $('clock').textContent = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  $('clock').textContent = clock12(d);
   $('date').textContent = d.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
   $('greet').textContent = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
@@ -580,7 +585,7 @@ dayLight(); setInterval(dayLight, 60000);
 
 // Heads-ups like "Rain in ~20 mins", worked out from the forecast (re-checked every minute).
 const toDate = s => new Date(s);  // forecast times are local, e.g. "2026-10-22T16:15"
-const hourLabel = d => d.toLocaleTimeString([], {hour:'numeric'});
+const hourLabel = d => clock12(d, false);
 const roundMins = m => m <= 7 ? 'a few mins' : m < 60 ? `${Math.round(m / 5) * 5} mins` : `${Math.round(m / 60 * 2) / 2} hr`;
 function weatherAlerts(d) {
   const now = new Date(), out = [];
@@ -607,7 +612,7 @@ function weatherAlerts(d) {
   const cold = next.find(x => x.temp <= 0);
   if (cold) out.push({icon:'snow', text: `Frost around ${hourLabel(cold.t)}`});
   const gust = next.slice(0, 6).reduce((a, x) => x.gust > (a ? a.gust : 0) ? x : a, null);
-  if (gust && gust.gust >= 50) out.push({icon:'wind', text: `Gusts up to ${Math.round(gust.gust)} km/h`});
+  if (gust && gust.gust >= 30) out.push({icon:'wind', text: `Gusts up to ${Math.round(gust.gust)} mph`});
   return out.slice(0, 2);
 }
 function renderAlerts() {
@@ -765,7 +770,7 @@ const fmt = sec => {
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
 };
 const label = min => min >= 60 ? `${Math.floor(min / 60)} hr${min % 60 ? ' ' + min % 60 + ' min' : ''}` : `${min} min`;
-const endsAt = ms => new Date(ms).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+const endsAt = ms => clock12(new Date(ms));
 
 function drawRing(frac, showLap) {
   $('arc').style.strokeDashoffset = C * (1 - frac);

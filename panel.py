@@ -209,7 +209,7 @@ def weather_loop():
                    "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset"
                    "&minutely_15=precipitation"
                    "&hourly=precipitation_probability,temperature_2m,wind_gusts_10m"
-                   "&timezone=auto&forecast_days=2")
+                   "&wind_speed_unit=mph&timezone=auto&forecast_days=2")
             data = json.load(urlopen(url, timeout=15))
             js(f"setWeather({json.dumps(data)}, {json.dumps(place)})")
             wait = 10 * 60  # often enough for rain heads-ups
