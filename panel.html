@@ -173,6 +173,25 @@
   #timerCard .mini .lbl svg { width:26px; height:26px; }
   #tcText { font-size:21px; font-weight:600; font-variant-numeric:tabular-nums; }
   body.night .bubble { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.1); }
+  /* On/off switch devices (the TV): tap anywhere on the bubble; it glows while the device is on */
+  .bubble.toggle { cursor:pointer; transition:background 2.4s, border-color .6s, box-shadow .6s; }
+  .bubble.toggle:active { transform:scale(.98); }
+  .bubble.toggle .bi svg { width:34px; height:34px; stroke-width:1.8; }
+  .bubble.toggle .scr { fill:#2a1a10; stroke:none; transition:fill .6s; }
+  .bubble.toggle.on { border-color:rgba(255,190,110,.75); box-shadow:0 0 0 1px rgba(255,190,110,.35), 0 0 42px rgba(255,170,70,.45); }
+  .bubble.toggle.on .bi { background:radial-gradient(circle, rgba(255,205,130,.75), rgba(255,150,60,.35)); }
+  .bubble.toggle.on .scr { fill:#ffd88a; animation:flick 3.2s ease-in-out infinite; }
+  @keyframes flick { 0%,100% { fill:#ffd88a; } 35% { fill:#ffc0a0; } 70% { fill:#bfe3ff; } }
+  .bubble.toggle.on .state { color:#ffc979; opacity:1; }
+  .sw { flex:none; width:92px; height:52px; border-radius:999px; position:relative; background:rgba(255,255,255,.14);
+        border:1px solid rgba(255,214,170,.3); transition:background .45s, box-shadow .45s; }
+  .sw i { position:absolute; left:4px; top:4px; width:42px; height:42px; border-radius:50%; background:#f6e3c8;
+          box-shadow:0 3px 10px rgba(0,0,0,.3); transition:transform .45s cubic-bezier(.3,1.4,.5,1), background .45s; }
+  .on .sw { background:#ffb547; box-shadow:0 0 22px rgba(255,181,71,.6); }
+  .on .sw i { transform:translateX(40px); background:#fff8ec; }
+  .busy .sw i { animation:nudge 1s ease-in-out infinite; }
+  @keyframes nudge { 50% { opacity:.55; } }
+  body.night .bubble.toggle.on { border-color:rgba(255,190,110,.5); }
 
   /* Window */
   #windowWrap { position:absolute; right:5vw; top:max(5vh,env(safe-area-inset-top)); width:var(--ww); text-align:center; pointer-events:auto; }
@@ -626,10 +645,17 @@ function weatherMsg(text) {
   if ($('weather') && !$('wtemp')) $('weather').innerHTML = `<div id="wdesc">${esc(text)}</div>`;
 }
 
-// Rooms, devices, buttons (one bubble per device)
+// Rooms, devices, buttons (one bubble per device).
+// A device with "toggle" is one big on/off switch: the bubble glows while it's on.
+ICONS.tvset = '<rect x="2.5" y="4" width="19" height="13" rx="2.5"/><rect class="scr" x="5" y="6.5" width="14" height="8" rx="1"/><path d="M8 21h8M12 17v4"/>';
 $('rooms').innerHTML = (HUB.rooms || []).map((room, r) => `
   ${(HUB.rooms || []).length > 1 ? `<div class="roomlabel">${esc(room.name)}</div>` : ''}
-  ${(room.devices || []).map((dev, d) => `
+  ${(room.devices || []).map((dev, d) => dev.toggle ? `
+    <div class="bubble toggle" id="dev-${r}-${d}" data-id="${r}-${d}" role="switch" aria-label="${esc(dev.name)}">
+      <div class="bi">${svg(dev.icon === 'tv' ? 'tvset' : dev.icon)}</div>
+      <div class="bt"><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">Tap to turn on</div></div>
+      <div class="sw"><i></i></div>
+    </div>` : `
     <div class="bubble">
       <div class="bi">${svg(dev.icon)}</div>
       <div class="bt"><div class="name">${esc(dev.name)}</div><div class="state" id="s-${r}-${d}">${esc(room.name)}</div></div>
@@ -646,9 +672,45 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 3500);
 }
 
+// Switch devices: what we know about each one ("on", "off" or unknown) and what we're waiting for.
+const devState = {}, devWant = {};
+function showDevice(id) {
+  const el = $('dev-' + id), st = $('s-' + id), want = devWant[id], on = want ? want.to === 'on' : devState[id] === 'on';
+  el.classList.toggle('on', on);
+  el.classList.toggle('busy', !!want);
+  el.setAttribute('aria-checked', on);
+  st.className = 'state';
+  st.textContent = want ? (want.to === 'on' ? 'Turning on…' : 'Turning off…')
+    : devState[id] === 'on' ? 'On' : devState[id] === 'off' ? 'Off' : 'Tap to turn on';
+}
+// Called by panel.py with the device's live state: true (on), false (off) or null (can't tell).
+function setDeviceState(id, on) {
+  if (!$('dev-' + id) || on == null) return;
+  devState[id] = on ? 'on' : 'off';
+  const want = devWant[id];
+  if (want && (devState[id] === want.to || Date.now() > want.until)) delete devWant[id];
+  showDevice(id);
+}
+document.querySelectorAll('#rooms .bubble.toggle').forEach(el => el.addEventListener('click', () => {
+  const id = el.dataset.id;
+  if (devWant[id]) return;
+  const to = el.classList.contains('on') ? 'off' : 'on';
+  devWant[id] = {to, until: Date.now() + 45000};  // the TV can take a while to wake up
+  showDevice(id);
+  location.href = `panel://${id}-${to}`;  // panel.py runs the Shortcut
+}));
+
 // Called by panel.py when a button's action finishes.
 function done(id, ok, message) {
-  const btn = document.querySelector(`[data-id="${id}"]`), [r, d] = id.split('-');
+  const [r, d, b] = id.split('-');
+  if (b === 'on' || b === 'off') {
+    const key = `${r}-${d}`;
+    if (!ok) { delete devWant[key]; showDevice(key); toast('Failed: ' + message); return; }
+    devState[key] = b;  // trust it until the live status says otherwise
+    setTimeout(() => { if (devWant[key]) { delete devWant[key]; showDevice(key); } }, 45000);
+    return;
+  }
+  const btn = document.querySelector(`[data-id="${id}"]`);
   btn.classList.remove('busy');
   const st = $(`s-${r}-${d}`);
   st.className = 'state ' + (ok ? 'ok' : 'err');

@@ -2,10 +2,12 @@
 edit that file to add rooms, devices, buttons, icons and colours, then run this again."""
 import json
 import os
+import socket
 import threading
 import time
 import webbrowser
 from urllib.parse import quote
+from concurrent.futures import ThreadPoolExecutor
 from urllib.request import urlopen
 
 import console
@@ -93,8 +95,13 @@ class Bridge:
             set_night_brightness(button_id.endswith("1"))
             return
         try:
-            r, d, b = (int(x) for x in button_id.split("-"))
-            ok, msg = run_button(HUB["rooms"][r]["devices"][d]["buttons"][b])
+            r, d, b = button_id.split("-")
+            device = HUB["rooms"][int(r)]["devices"][int(d)]
+            if b in ("on", "off"):  # a switch device, e.g. the TV
+                ok, msg = run_button(device["toggle"][b])
+                hurry_status()
+            else:
+                ok, msg = run_button(device["buttons"][int(b)])
         except Exception as e:
             ok, msg = False, str(e) or type(e).__name__
         webview.eval_js(f"done({json.dumps(button_id)}, {json.dumps(ok)}, {json.dumps(msg)})")
@@ -224,3 +231,87 @@ def weather_loop():
 
 # Its own thread, so it never holds up the buttons.
 threading.Thread(target=weather_loop, daemon=True).start()
+
+
+# ---------- Live device status ----------
+# A Hisense TV answers on its remote-control port (the one the RemoteNOW app uses) only while it's on.
+# The hub finds the TV on the Wi-Fi by itself and remembers its address in private.json (on this iPad only).
+HISENSE_PORT = 36669
+_status_hurry = threading.Event()
+
+
+def hurry_status():
+    """Check often for a little while after a tap, so the switch catches up quickly."""
+    _status_hurry.set()
+
+
+def answers(ip, timeout=1.0):
+    try:
+        socket.create_connection((ip, HISENSE_PORT), timeout=timeout).close()
+        return True
+    except OSError:
+        return False
+
+
+def find_tv():
+    """Look for the TV across the home network (only works while it's on)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("1.1.1.1", 80))  # no data is sent; this just tells us our own address
+        me = s.getsockname()[0]
+        s.close()
+    except OSError:
+        return None
+    base = me.rsplit(".", 1)[0]
+    ips = [f"{base}.{i}" for i in range(1, 255) if f"{base}.{i}" != me]
+    with ThreadPoolExecutor(64) as pool:
+        for ip, ok in zip(ips, pool.map(lambda ip: answers(ip, 0.6), ips)):
+            if ok:
+                return ip
+    return None
+
+
+def remember_tv(ip):
+    mine = {}
+    if os.path.exists(PRIVATE_FILE):
+        with open(PRIVATE_FILE, encoding="utf-8") as f:
+            mine = json.load(f)
+    mine.setdefault("tv", {})["ip"] = ip
+    with open(PRIVATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(mine, f, indent=2)
+
+
+def status_loop():
+    devices = [(f"{r}-{d}", dev) for r, room in enumerate(HUB.get("rooms") or [])
+               for d, dev in enumerate(room.get("devices") or []) if dev.get("status") == "hisense"]
+    if not devices:
+        return
+    for _ in range(40):  # wait for the page to be ready
+        if js("typeof setDeviceState") == "function":
+            break
+        time.sleep(0.25)
+    tv = HUB.setdefault("tv", {})
+    last_search = 0
+    hurry_until = 0
+    while hub_view.on_screen:
+        on = answers(tv["ip"]) if tv.get("ip") else False
+        if not on and time.time() - last_search > (20 if time.time() < hurry_until else 120):
+            last_search = time.time()  # it may be off, or it may have a new address: have a look
+            found = find_tv()
+            if found:
+                on = True
+                if found != tv.get("ip"):
+                    tv["ip"] = found
+                    try:
+                        remember_tv(found)
+                    except Exception:
+                        pass
+        state = on if (on or tv.get("ip")) else None  # never seen it on: we can't tell yet
+        for key, _ in devices:
+            js(f"setDeviceState({json.dumps(key)}, {json.dumps(state)})")
+        if _status_hurry.wait(2 if time.time() < hurry_until else 10):
+            _status_hurry.clear()
+            hurry_until = time.time() + 45
+
+
+threading.Thread(target=status_loop, daemon=True).start()
